@@ -14,6 +14,7 @@ export interface GeminiTranscriberSettings {
     notifyUsedTokens: boolean;
     showInStatusBar: boolean;
     removeEmbeddedAfterTranscription: boolean;
+    enableStatistics: boolean;
 }
 
 export const DEFAULT_SETTINGS: Partial<GeminiTranscriberSettings> = {
@@ -28,6 +29,7 @@ export const DEFAULT_SETTINGS: Partial<GeminiTranscriberSettings> = {
     notifyUsedTokens: true,
     showInStatusBar: true,
     removeEmbeddedAfterTranscription: false,
+    enableStatistics: true,
 };
 
 export class GeminiTranscriberSettingsTab extends PluginSettingTab {
@@ -232,7 +234,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
-            .setName("Display status in the Statusbar")
+            .setName("Display status in the statusbar")
             .addToggle((toggle) =>
                 toggle
                     .setValue(this.plugin.settings.showInStatusBar)
@@ -252,6 +254,20 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.removeEmbeddedAfterTranscription =
                             value;
+                        await this.plugin.saveSettings();
+                    }),
+            );
+
+        new Setting(containerEl)
+            .setName("Enable statistics")
+            .setDesc(
+                "Collect plugin usage statistics and view them with a command.",
+            ) //TODO Insert command name
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.plugin.settings.enableStatistics)
+                    .onChange(async (value) => {
+                        this.plugin.settings.enableStatistics = value;
                         await this.plugin.saveSettings();
                     }),
             );
