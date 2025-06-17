@@ -1,0 +1,48 @@
+import GeminiTranscriberPlugin from "main";
+import { Notice } from "obsidian";
+
+export function addCommands(plugin: GeminiTranscriberPlugin): void {
+    plugin.addCommand({
+        id: "start-stop-recording",
+        name: "Toggle Recording",
+        hotkeys: [{ modifiers: ["Alt"], key: "w" }],
+        callback: () => {
+            if (plugin.audioRecorder.getState() === "inactive") {
+                plugin.audioRecorder.startRecording();
+                return;
+            }
+
+            if (plugin.audioRecorder.getState() !== "inactive") {
+                plugin.audioRecorder.stopRecording();
+                return;
+            }
+        },
+    });
+
+    plugin.addCommand({
+        id: "pause-resume-recording",
+        name: "Pause/Resume recording",
+        hotkeys: [{ modifiers: ["Alt"], key: "p" }],
+        checkCallback: (checking: boolean) => {
+            if (plugin.audioRecorder.getState() === "recording") {
+                if (!checking) {
+                    plugin.audioRecorder.pauseRecording();
+                    new Notice("Recording paused");
+                }
+
+                return true;
+            }
+
+            if (plugin.audioRecorder.getState() === "paused") {
+                if (!checking) {
+                    plugin.audioRecorder.resumeRecording();
+                    new Notice("Recording resumed");
+                }
+
+                return true;
+            }
+
+            return false;
+        },
+    });
+}
