@@ -6,15 +6,20 @@ import {
     GeminiTranscriberSettingsTab,
     DEFAULT_SETTINGS,
 } from "src/settings";
+import { StatusBar } from "src/statusBar";
 
 export default class GeminiTranscriberPlugin extends Plugin {
+    statusBar: StatusBar;
+    audioRecorder: AudioRecorder;
     settings: GeminiTranscriberSettings;
-    audioRecorder = new AudioRecorder(this);
 
     async onload() {
         await this.loadSettings();
         this.addSettingTab(new GeminiTranscriberSettingsTab(this.app, this));
         addCommands(this);
+
+        this.audioRecorder = new AudioRecorder(this);
+        this.statusBar = new StatusBar(this);
     }
 
     onunload() {}

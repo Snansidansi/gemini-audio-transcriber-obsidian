@@ -50,18 +50,22 @@ export class AudioRecorder {
 
         this.chunks = [];
         this.mediaRecorder.start();
+        this.plugin.statusBar.setRecording();
     }
 
     pauseRecording() {
         this.mediaRecorder.pause();
+        this.plugin.statusBar.setPaused();
     }
 
     resumeRecording() {
         this.mediaRecorder.resume();
+        this.plugin.statusBar.setRecording();
     }
 
     stopRecording() {
         this.mediaRecorder.stop();
+        this.plugin.statusBar.setProcessing();
     }
 
     private async stop() {
