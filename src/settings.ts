@@ -11,7 +11,6 @@ export interface GeminiTranscriberSettings {
     saveByNoteLocation: boolean;
     audioFileSaveLocation: string;
     embedAudioFile: boolean;
-    notifyUsedTokens: boolean;
     showInStatusBar: boolean;
     removeEmbeddedAfterTranscription: boolean;
     enableStatistics: boolean;
@@ -26,7 +25,6 @@ export const DEFAULT_SETTINGS: Partial<GeminiTranscriberSettings> = {
     audioFileSaveLocation: "",
     embedAudioFile: false,
     saveByNoteLocation: false,
-    notifyUsedTokens: true,
     showInStatusBar: true,
     removeEmbeddedAfterTranscription: false,
     enableStatistics: true,
@@ -218,20 +216,6 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                         }),
                 );
         }
-
-        new Setting(containerEl)
-            .setName("Notify about used Tokens")
-            .setDesc(
-                "Show a notification after a transcription displaying the number of API tokens used.",
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.plugin.settings.notifyUsedTokens)
-                    .onChange(async (value) => {
-                        this.plugin.settings.notifyUsedTokens = value;
-                        await this.plugin.saveSettings();
-                    }),
-            );
 
         new Setting(containerEl)
             .setName("Display status in the statusbar")
