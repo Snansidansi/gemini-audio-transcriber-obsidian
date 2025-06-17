@@ -192,7 +192,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
             new Setting(containerEl)
                 .setName("Save location for audio files")
                 .setDesc(
-                    "Enter a location in your vault where the audio files should be saved. Enter nothing for the default attachment directory (obsidian setting).",
+                    "Enter a location inside your vault where the audio files should be saved.",
                 )
                 .addText((text) =>
                     text

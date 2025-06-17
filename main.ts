@@ -1,16 +1,20 @@
+import { addCommands } from "src/commands";
 import { Plugin } from "obsidian";
+import { AudioRecorder } from "src/audioRecorder";
 import {
-    DEFAULT_SETTINGS,
     GeminiTranscriberSettings,
     GeminiTranscriberSettingsTab,
+    DEFAULT_SETTINGS,
 } from "src/settings";
 
 export default class GeminiTranscriberPlugin extends Plugin {
     settings: GeminiTranscriberSettings;
+    audioRecorder = new AudioRecorder(this);
 
     async onload() {
         await this.loadSettings();
         this.addSettingTab(new GeminiTranscriberSettingsTab(this.app, this));
+        addCommands(this);
     }
 
     onunload() {}
