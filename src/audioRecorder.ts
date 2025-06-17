@@ -26,7 +26,7 @@ export class AudioRecorder {
             .catch((err) => {
                 const errMsg = `A getUserMedia error occured: ${err}`;
                 console.log(errMsg);
-                new Notice(errMsg, 5000);
+                new Notice(errMsg, 0);
             });
 
         this.mediaRecorder.ondataavailable = (e) => {
@@ -44,7 +44,7 @@ export class AudioRecorder {
 
     startRecording() {
         if (!this.mediaRecorder) {
-            new Notice("Error: Recorder not initialized");
+            new Notice("Error: Recorder not initialized", 0);
             return;
         }
 
@@ -80,8 +80,6 @@ export class AudioRecorder {
             );
         }
 
-        new Notice("Saved audio successfuly");
-
         this.plugin.transcriber.transcribe(blob, blob.type);
     }
 
@@ -104,7 +102,7 @@ export class AudioRecorder {
                 await this.plugin.app.vault.createFolder(filePath);
             } catch (error) {
                 console.log(error);
-                new Notice(error, 10000);
+                new Notice(error, 0);
             }
         }
 
