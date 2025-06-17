@@ -5,6 +5,7 @@ import {
     GoogleGenAI,
 } from "@google/genai";
 import GeminiTranscriberPlugin from "main";
+import { Notice } from "obsidian";
 
 export class Transcriber {
     private plugin: GeminiTranscriberPlugin;
@@ -19,22 +20,41 @@ export class Transcriber {
         this.ai = new GoogleGenAI({ apiKey: this.plugin.settings.apiKey });
     }
 
-    async transcribe(file: string | Blob, mimeType: string): Promise<string> {
+    /**
+     * @returns {Promise<string | undefined>} undefined if an error
+     * (like an invalid api key) occures.
+     */
+    async transcribe(
+        file: string | Blob,
+        mimeType: string,
+    ): Promise<string | undefined> {
         this.plugin.statusBar.setProcessing();
 
-        const uploadedFile = await this.uploadAudio(file, mimeType);
-        const response = await this.getResponse(uploadedFile);
-        this.deleteAudio(uploadedFile);
+        try {
+            const uploadedFile = await this.uploadAudio(file, mimeType);
+            const response = await this.getResponse(uploadedFile);
+            this.deleteAudio(uploadedFile);
 
-        this.plugin.statusBar.setReady();
+            this.plugin.statusBar.setReady();
 
-        return response.text ?? "";
+            return response.text ?? "";
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                if (error.message.contains("API key not valid")) {
+                    new Notice("Error: Your API key for Gemini is invalid.", 0);
+                }
+
+                this.plugin.statusBar.setReady();
+            }
+        }
     }
 
     private async getResponse(uploadedFile: File) {
         return await this.ai.models.generateContent({
             model: this.plugin.settings.modelName,
             contents: createUserContent([
+                // file was uploaded before so it has a uri and mimeType
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 createPartFromUri(uploadedFile.uri!, uploadedFile.mimeType!),
                 this.plugin.settings.prompt,
             ]),
@@ -52,6 +72,7 @@ export class Transcriber {
 
     private async deleteAudio(file: File) {
         // Uploaded files always have a name generated for them
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         await this.ai.files.delete({ name: file.name! });
     }
 }
