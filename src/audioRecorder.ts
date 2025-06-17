@@ -64,8 +64,8 @@ export class AudioRecorder {
     }
 
     stopRecording() {
-        this.mediaRecorder.stop();
         this.plugin.statusBar.setProcessing();
+        this.mediaRecorder.stop();
     }
 
     private async stop() {
@@ -81,6 +81,8 @@ export class AudioRecorder {
         }
 
         new Notice("Saved audio successfuly");
+
+        this.plugin.transcriber.transcribe(blob, blob.type);
     }
 
     private async getSavePath() {

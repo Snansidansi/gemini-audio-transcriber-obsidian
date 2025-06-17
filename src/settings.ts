@@ -62,6 +62,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.apiKey)
                     .onChange(async (value) => {
                         this.plugin.settings.apiKey = value;
+                        this.plugin.transcriber.reloadApiKey();
                         await this.plugin.saveSettings();
                     })
                     .inputEl.setCssStyles({ width: "200%" }),

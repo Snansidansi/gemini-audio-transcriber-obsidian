@@ -7,11 +7,13 @@ import {
     DEFAULT_SETTINGS,
 } from "src/settings";
 import { StatusBar } from "src/statusBar";
+import { Transcriber } from "src/transcriber";
 
 export default class GeminiTranscriberPlugin extends Plugin {
     statusBar: StatusBar;
     audioRecorder: AudioRecorder;
     settings: GeminiTranscriberSettings;
+    transcriber: Transcriber;
 
     async onload() {
         await this.loadSettings();
@@ -20,6 +22,7 @@ export default class GeminiTranscriberPlugin extends Plugin {
 
         this.audioRecorder = new AudioRecorder(this);
         this.statusBar = new StatusBar(this);
+        this.transcriber = new Transcriber(this);
     }
 
     onunload() {}
