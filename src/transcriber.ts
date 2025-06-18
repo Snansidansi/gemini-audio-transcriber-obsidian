@@ -6,28 +6,28 @@ import {
 } from "@google/genai";
 import GeminiTranscriberPlugin from "main";
 import { Notice } from "obsidian";
+import { ResponseHandler } from "./responseHandler";
 
 export class Transcriber {
     private plugin: GeminiTranscriberPlugin;
     private ai: GoogleGenAI;
+    private responseHandler: ResponseHandler;
 
     constructor(plugin: GeminiTranscriberPlugin) {
         this.plugin = plugin;
         this.reloadApiKey();
+        this.responseHandler = new ResponseHandler(plugin);
     }
 
     reloadApiKey() {
         this.ai = new GoogleGenAI({ apiKey: this.plugin.settings.apiKey });
     }
 
-    /**
-     * @returns {Promise<string | undefined>} undefined if an error
-     * (like an invalid api key) occures.
-     */
     async transcribe(
         file: string | Blob,
         mimeType: string,
-    ): Promise<string | undefined> {
+        filename: string | undefined,
+    ) {
         this.plugin.statusBar.setProcessing();
 
         try {
@@ -35,18 +35,18 @@ export class Transcriber {
             const response = await this.getResponse(uploadedFile);
             this.deleteAudio(uploadedFile);
 
-            this.plugin.statusBar.setReady();
-
-            return response.text ?? "";
+            this.responseHandler.handleResponse(response, filename);
         } catch (error: unknown) {
             if (error instanceof Error) {
                 if (error.message.contains("API key not valid")) {
                     new Notice("Error: Your API key for Gemini is invalid.", 0);
+                } else {
+                    new Notice(error.message, 0);
                 }
-
-                this.plugin.statusBar.setReady();
             }
         }
+
+        this.plugin.statusBar.setReady();
     }
 
     private async getResponse(uploadedFile: File) {

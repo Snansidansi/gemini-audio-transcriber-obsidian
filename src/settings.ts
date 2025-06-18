@@ -10,6 +10,7 @@ export interface GeminiTranscriberSettings {
     saveAudioFile: boolean;
     saveByNoteLocation: boolean;
     audioFileSaveLocation: string;
+    transcriptSaveLocation: string;
     embedAudioFile: boolean;
     showInStatusBar: boolean;
     removeEmbeddedAfterTranscription: boolean;
@@ -23,6 +24,7 @@ export const DEFAULT_SETTINGS: Partial<GeminiTranscriberSettings> = {
     prompt: "Transcribe the audio to markdown, removing filler words. Language: ",
     saveAudioFile: true,
     audioFileSaveLocation: "",
+    transcriptSaveLocation: "",
     embedAudioFile: false,
     saveByNoteLocation: false,
     showInStatusBar: true,
@@ -112,7 +114,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
         const customPrompt = new Setting(containerEl)
             .setName("Custom prompt")
             .setDesc(
-                "Show and edit the prompt that gets passed to gemini with your audio file. Enabeling this setting will disable the language setting (you can set it manually in the prompt).",
+                "Show and edit the prompt that gets passed to gemini with your audio file. Enabling this setting will disable the language setting (you can set it manually in the prompt).",
             )
             .addToggle((toggle) =>
                 toggle
@@ -199,6 +201,21 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                         .setPlaceholder("attachment/audio")
                         .onChange(async (value) => {
                             this.plugin.settings.audioFileSaveLocation = value;
+                            await this.plugin.saveSettings();
+                        }),
+                );
+
+            new Setting(containerEl)
+                .setName("Save location for transcripts")
+                .setDesc(
+                    "Enter a location inside your vault where the transcripts should be saved if no editor is opened.",
+                )
+                .addText((text) =>
+                    text
+                        .setValue(this.plugin.settings.transcriptSaveLocation)
+                        .setPlaceholder("notes/transcripts")
+                        .onChange(async (value) => {
+                            this.plugin.settings.transcriptSaveLocation = value;
                             await this.plugin.saveSettings();
                         }),
                 );
