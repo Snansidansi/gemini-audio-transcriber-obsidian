@@ -13,7 +13,6 @@ export interface GeminiTranscriberSettings {
     transcriptSaveLocation: string;
     embedAudioFile: boolean;
     showInStatusBar: boolean;
-    removeEmbeddedAfterTranscription: boolean;
     enableStatistics: boolean;
 }
 
@@ -28,7 +27,6 @@ export const DEFAULT_SETTINGS: Partial<GeminiTranscriberSettings> = {
     embedAudioFile: false,
     saveByNoteLocation: false,
     showInStatusBar: true,
-    removeEmbeddedAfterTranscription: false,
     enableStatistics: true,
 };
 
@@ -242,20 +240,6 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.showInStatusBar)
                     .onChange(async (value) => {
                         this.plugin.settings.showInStatusBar = value;
-                        await this.plugin.saveSettings();
-                    }),
-            );
-
-        new Setting(containerEl)
-            .setName("Remove embedded audio after transcription")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(
-                        this.plugin.settings.removeEmbeddedAfterTranscription,
-                    )
-                    .onChange(async (value) => {
-                        this.plugin.settings.removeEmbeddedAfterTranscription =
-                            value;
                         await this.plugin.saveSettings();
                     }),
             );
