@@ -9,6 +9,16 @@ import { Notice } from "obsidian";
 import { ResponseHandler } from "./responseHandler";
 
 export class Transcriber {
+    static validFileFormats = [
+        "wav",
+        "mp3",
+        "aiff",
+        "aac",
+        "ogg",
+        "flac",
+        "webm",
+    ] as const;
+
     private plugin: GeminiTranscriberPlugin;
     private ai: GoogleGenAI;
     private responseHandler: ResponseHandler;
@@ -23,16 +33,12 @@ export class Transcriber {
         this.ai = new GoogleGenAI({ apiKey: this.plugin.settings.apiKey });
     }
 
-    async transcribe(
-        file: string | Blob,
-        mimeType: string,
-        filename: string | undefined,
-    ) {
+    async transcribe(blob: Blob, filename: string | undefined) {
         this.plugin.statusBar.setProcessing();
 
         let uploadedFile: File | undefined = undefined;
         try {
-            uploadedFile = await this.uploadAudio(file, mimeType);
+            uploadedFile = await this.uploadAudio(blob, blob.type);
             const response = await this.getResponse(uploadedFile);
             this.responseHandler.handleResponse(response, filename);
         } catch (error: unknown) {

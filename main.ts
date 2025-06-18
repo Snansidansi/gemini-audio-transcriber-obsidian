@@ -8,6 +8,7 @@ import {
 } from "src/settings";
 import { StatusBar } from "src/statusBar";
 import { Transcriber } from "src/transcriber";
+import { addContextMenus } from "./src/contextMenus";
 
 export default class GeminiTranscriberPlugin extends Plugin {
     statusBar: StatusBar;
@@ -19,6 +20,7 @@ export default class GeminiTranscriberPlugin extends Plugin {
         await this.loadSettings();
         this.addSettingTab(new GeminiTranscriberSettingsTab(this.app, this));
         addCommands(this);
+        addContextMenus(this);
 
         this.audioRecorder = new AudioRecorder(this);
         this.statusBar = new StatusBar(this);

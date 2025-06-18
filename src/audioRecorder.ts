@@ -97,11 +97,7 @@ export class AudioRecorder {
             );
         }
 
-        this.plugin.transcriber.transcribe(
-            blob,
-            blob.type,
-            path.basename(filepath),
-        );
+        this.plugin.transcriber.transcribe(blob, path.basename(filepath));
     }
 
     private async getAndCreateSavePath() {
