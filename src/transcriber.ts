@@ -30,23 +30,33 @@ export class Transcriber {
     ) {
         this.plugin.statusBar.setProcessing();
 
+        let uploadedFile: File | undefined = undefined;
         try {
-            const uploadedFile = await this.uploadAudio(file, mimeType);
+            uploadedFile = await this.uploadAudio(file, mimeType);
             const response = await this.getResponse(uploadedFile);
-            this.deleteAudio(uploadedFile);
-
             this.responseHandler.handleResponse(response, filename);
         } catch (error: unknown) {
             if (error instanceof Error) {
                 if (error.message.contains("API key not valid")) {
                     new Notice("Error: Your API key for Gemini is invalid.", 0);
+                    return;
                 } else {
+                    console.log(error);
                     new Notice(error.message, 0);
                 }
             }
+        } finally {
+            this.plugin.statusBar.setReady();
         }
 
-        this.plugin.statusBar.setReady();
+        if (uploadedFile) {
+            try {
+                this.deleteAudio(uploadedFile);
+            } catch (error) {
+                console.log(error);
+                new Notice(error, 0);
+            }
+        }
     }
 
     private async getResponse(uploadedFile: File) {
