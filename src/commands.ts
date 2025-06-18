@@ -45,4 +45,22 @@ export function addCommands(plugin: GeminiTranscriberPlugin): void {
             return false;
         },
     });
+
+    plugin.addCommand({
+        id: "abort-recording",
+        name: "Abort recording",
+        hotkeys: [{ modifiers: ["Alt"], key: "e" }],
+        checkCallback: (checking: boolean) => {
+            if (plugin.audioRecorder.getState() === "recording") {
+                if (!checking) {
+                    plugin.audioRecorder.abortRecording();
+                    new Notice("aborted recording");
+                }
+
+                return true;
+            }
+
+            return false;
+        },
+    });
 }

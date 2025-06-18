@@ -6,6 +6,7 @@ export class AudioRecorder {
     private plugin: GeminiTranscriberPlugin;
     private chunks: Blob[] = [];
     private mediaRecorder: MediaRecorder;
+    private abort = false;
 
     private static mimeType = "audio/webm; codecs=opus";
 
@@ -43,6 +44,10 @@ export class AudioRecorder {
     }
 
     startRecording() {
+        if (this.abort) {
+            return;
+        }
+
         if (!this.mediaRecorder) {
             new Notice("Error: Recorder not initialized", 0);
             return;
@@ -68,7 +73,18 @@ export class AudioRecorder {
         this.mediaRecorder.stop();
     }
 
+    abortRecording() {
+        this.abort = true;
+        this.mediaRecorder.stop();
+    }
+
     private async stop() {
+        if (this.abort) {
+            this.plugin.statusBar.setReady();
+            this.abort = false;
+            return;
+        }
+
         const blob = new Blob(this.chunks, {
             type: this.mediaRecorder.mimeType,
         });

@@ -1,5 +1,4 @@
 import { GenerateContentResponse } from "@google/genai";
-import { time } from "console";
 import GeminiTranscriberPlugin from "main";
 import { MarkdownView } from "obsidian";
 import * as path from "path";
