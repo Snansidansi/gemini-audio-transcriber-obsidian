@@ -1,7 +1,7 @@
 import GeminiTranscriberPlugin from "main";
 
 const Colors = {
-    Ready: "#33ff41",
+    Ready: "green",
     Recording: "yellow",
     Paused: "orange",
     Processing: "red",
