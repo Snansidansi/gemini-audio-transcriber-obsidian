@@ -173,6 +173,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                         .onChange(async (value) => {
                             this.plugin.settings.statusbarColorReady = value;
                             await this.plugin.saveSettings();
+                            this.plugin.statusBar.reloadStatus();
                         });
                 });
 
@@ -186,6 +187,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                             this.plugin.settings.statusbarColorRecording =
                                 value;
                             await this.plugin.saveSettings();
+                            this.plugin.statusBar.reloadStatus();
                         });
                 });
 
@@ -198,6 +200,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                         .onChange(async (value) => {
                             this.plugin.settings.statusbarColorPause = value;
                             await this.plugin.saveSettings();
+                            this.plugin.statusBar.reloadStatus();
                         });
                 });
 
@@ -211,6 +214,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                             this.plugin.settings.statusbarColorProcessing =
                                 value;
                             await this.plugin.saveSettings();
+                            this.plugin.statusBar.reloadStatus();
                         });
                 });
         }

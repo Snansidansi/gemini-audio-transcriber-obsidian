@@ -1,54 +1,83 @@
 import GeminiTranscriberPlugin from "main";
 import { Stopwatch } from "./stopwatch";
 
-const Colors = {
-    Ready: "green",
-    Recording: "red",
-    Paused: "yellow",
-    Processing: "orange",
-} as const;
+type status = "ready" | "recording" | "pause" | "processing";
 
 export class StatusBar {
     private statusBarItem: HTMLElement;
     private spanElem: HTMLSpanElement;
     private stopwatch: Stopwatch;
+    private status: status;
+    private plugin: GeminiTranscriberPlugin;
 
     constructor(plugin: GeminiTranscriberPlugin) {
         this.stopwatch = new Stopwatch((time) => {
             this.setRecordingTime(time);
         });
 
+        this.plugin = plugin;
         this.statusBarItem = plugin.addStatusBarItem();
         this.spanElem = this.statusBarItem.createEl("span", {});
         this.spanElem.setCssStyles({ fontSize: "1.2em" });
-        this.setReady();
+
+        this.setStatus("ready");
     }
 
-    setReady() {
+    reloadStatus() {
+        this.setStatus(this.status);
+    }
+
+    setStatus(status: status) {
+        this.status = status;
+        switch (this.status) {
+            case "ready":
+                this.setReady();
+                break;
+            case "recording":
+                this.setRecording();
+                break;
+            case "pause":
+                this.setPause();
+                break;
+            case "processing":
+                this.setProcessing;
+                break;
+        }
+    }
+
+    private setReady() {
         this.spanElem.textContent = "transcriber ready";
-        this.spanElem.setCssStyles({ color: Colors.Ready });
+        this.spanElem.setCssStyles({
+            color: this.plugin.settings.statusbarColorReady,
+        });
         this.stopwatch.resetTimerOnly();
         this.stopwatch.stop();
     }
 
-    setRecording() {
-        this.spanElem.setCssStyles({ color: Colors.Recording });
+    private setRecording() {
+        this.spanElem.setCssStyles({
+            color: this.plugin.settings.statusbarColorRecording,
+        });
         this.stopwatch.start();
+    }
+
+    private setPause() {
+        this.spanElem.textContent = "paused";
+        this.spanElem.setCssStyles({
+            color: this.plugin.settings.statusbarColorPause,
+        });
+        this.stopwatch.stop();
+    }
+
+    private setProcessing() {
+        this.spanElem.textContent = "processing";
+        this.spanElem.setCssStyles({
+            color: this.plugin.settings.statusbarColorProcessing,
+        });
+        this.stopwatch.stop();
     }
 
     private setRecordingTime(time: string): void {
         this.spanElem.textContent = "rec: " + time;
-    }
-
-    setPaused() {
-        this.spanElem.textContent = "paused";
-        this.spanElem.setCssStyles({ color: Colors.Paused });
-        this.stopwatch.stop();
-    }
-
-    setProcessing() {
-        this.spanElem.textContent = "processing";
-        this.spanElem.setCssStyles({ color: Colors.Processing });
-        this.stopwatch.stop();
     }
 }

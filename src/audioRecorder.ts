@@ -55,21 +55,21 @@ export class AudioRecorder {
 
         this.chunks = [];
         this.mediaRecorder.start();
-        this.plugin.statusBar.setRecording();
+        this.plugin.statusBar.setStatus("recording");
     }
 
     pauseRecording() {
         this.mediaRecorder.pause();
-        this.plugin.statusBar.setPaused();
+        this.plugin.statusBar.setStatus("pause");
     }
 
     resumeRecording() {
         this.mediaRecorder.resume();
-        this.plugin.statusBar.setRecording();
+        this.plugin.statusBar.setStatus("recording");
     }
 
     stopRecording() {
-        this.plugin.statusBar.setProcessing();
+        this.plugin.statusBar.setStatus("processing");
         this.mediaRecorder.stop();
     }
 
@@ -80,7 +80,7 @@ export class AudioRecorder {
 
     private async stop() {
         if (this.abort) {
-            this.plugin.statusBar.setReady();
+            this.plugin.statusBar.setStatus("ready");
             this.abort = false;
             return;
         }
