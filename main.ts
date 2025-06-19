@@ -9,6 +9,7 @@ import {
 import { StatusBar } from "src/statusBar";
 import { Transcriber } from "src/transcriber";
 import { addContextMenus } from "./src/contextMenus";
+import { RecorderControlPanel } from "src/recorderControlPanel";
 
 export default class GeminiTranscriberPlugin extends Plugin {
     statusBar: StatusBar;
@@ -18,13 +19,15 @@ export default class GeminiTranscriberPlugin extends Plugin {
 
     async onload() {
         await this.loadSettings();
-        this.addSettingTab(new GeminiTranscriberSettingsTab(this.app, this));
-        addCommands(this);
-        addContextMenus(this);
 
         this.audioRecorder = new AudioRecorder(this);
         this.statusBar = new StatusBar(this);
         this.transcriber = new Transcriber(this);
+
+        this.addSettingTab(new GeminiTranscriberSettingsTab(this.app, this));
+        this.addRibbonIcons();
+        addCommands(this);
+        addContextMenus(this);
     }
 
     onunload() {}
@@ -39,5 +42,11 @@ export default class GeminiTranscriberPlugin extends Plugin {
 
     async saveSettings() {
         await this.saveData(this.settings);
+    }
+
+    private addRibbonIcons() {
+        this.addRibbonIcon("mic-vocal", "Open recorder controls", () => {
+            new RecorderControlPanel(this).open();
+        });
     }
 }
