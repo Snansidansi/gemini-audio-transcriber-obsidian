@@ -59,6 +59,22 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
             DEFAULT_SETTINGS.prompt! + this.plugin.settings.language;
     }
 
+    private restoreDefaultStatusBarColors() {
+        // All default colors are always set in DEFAULT_SETTINGS
+        this.plugin.settings.statusbarColorReady =
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            DEFAULT_SETTINGS.statusbarColorReady!;
+        this.plugin.settings.statusbarColorRecording =
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            DEFAULT_SETTINGS.statusbarColorRecording!;
+        this.plugin.settings.statusbarColorPause =
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            DEFAULT_SETTINGS.statusbarColorPause!;
+        this.plugin.settings.statusbarColorProcessing =
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            DEFAULT_SETTINGS.statusbarColorProcessing!;
+    }
+
     display(): void {
         const { containerEl } = this;
 
@@ -158,6 +174,12 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.customStatusbarColors)
                     .onChange(async (value) => {
                         this.plugin.settings.customStatusbarColors = value;
+
+                        if (!value) {
+                            this.restoreDefaultStatusBarColors();
+                            this.plugin.statusBar.reloadStatus();
+                        }
+
                         await this.plugin.saveSettings();
                         this.display();
                     }),
