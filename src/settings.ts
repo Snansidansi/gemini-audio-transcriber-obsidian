@@ -13,6 +13,11 @@ export interface GeminiTranscriberSettings {
     transcriptSaveLocation: string;
     embedAudioFile: boolean;
     showInStatusBar: boolean;
+    customStatusbarColors: boolean;
+    statusbarColorReady: string;
+    statusbarColorRecording: string;
+    statusbarColorPause: string;
+    statusbarColorProcessing: string;
     enableStatistics: boolean;
 }
 
@@ -27,6 +32,11 @@ export const DEFAULT_SETTINGS: Partial<GeminiTranscriberSettings> = {
     embedAudioFile: false,
     saveByNoteLocation: false,
     showInStatusBar: true,
+    customStatusbarColors: false,
+    statusbarColorReady: "#008000",
+    statusbarColorRecording: "#ff0000",
+    statusbarColorPause: "#ffff00",
+    statusbarColorProcessing: "#ffa500",
     enableStatistics: true,
 };
 
@@ -110,17 +120,6 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
-            .setName("Display status in the statusbar")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.plugin.settings.showInStatusBar)
-                    .onChange(async (value) => {
-                        this.plugin.settings.showInStatusBar = value;
-                        await this.plugin.saveSettings();
-                    }),
-            );
-
-        new Setting(containerEl)
             .setName("Enable statistics")
             .setDesc(
                 "Collect plugin usage statistics and view them with a command.",
@@ -134,8 +133,87 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                     }),
             );
 
+        this.renderStatusbarSettings(containerEl);
         this.renderPromptSettings(containerEl);
         this.renderSaveAudioSettings(containerEl);
+    }
+
+    private renderStatusbarSettings(containerEl: HTMLElement) {
+        new Setting(containerEl)
+            .setName("Display status in the status bar")
+            .setHeading()
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.plugin.settings.showInStatusBar)
+                    .onChange(async (value) => {
+                        this.plugin.settings.showInStatusBar = value;
+                        await this.plugin.saveSettings();
+                    }),
+            );
+
+        new Setting(containerEl)
+            .setName("Custom status bar colors")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.plugin.settings.customStatusbarColors)
+                    .onChange(async (value) => {
+                        this.plugin.settings.customStatusbarColors = value;
+                        await this.plugin.saveSettings();
+                        this.display();
+                    }),
+            );
+
+        if (this.plugin.settings.customStatusbarColors) {
+            new Setting(containerEl)
+                .setName("Ready color")
+                .setClass("indent-setting")
+                .addColorPicker((color) => {
+                    color
+                        .setValue(this.plugin.settings.statusbarColorReady)
+                        .onChange(async (value) => {
+                            this.plugin.settings.statusbarColorReady = value;
+                            await this.plugin.saveSettings();
+                        });
+                });
+
+            new Setting(containerEl)
+                .setName("Recording color")
+                .setClass("indent-setting")
+                .addColorPicker((color) => {
+                    color
+                        .setValue(this.plugin.settings.statusbarColorRecording)
+                        .onChange(async (value) => {
+                            this.plugin.settings.statusbarColorRecording =
+                                value;
+                            await this.plugin.saveSettings();
+                        });
+                });
+
+            new Setting(containerEl)
+                .setName("Pause color")
+                .setClass("indent-setting")
+                .addColorPicker((color) => {
+                    color
+                        .setValue(this.plugin.settings.statusbarColorPause)
+                        .onChange(async (value) => {
+                            this.plugin.settings.statusbarColorPause = value;
+                            await this.plugin.saveSettings();
+                        });
+                });
+
+            new Setting(containerEl)
+                .setName("Processing color")
+                .setClass("indent-setting")
+                .addColorPicker((color) => {
+                    color
+                        .setValue(this.plugin.settings.statusbarColorProcessing)
+                        .onChange(async (value) => {
+                            this.plugin.settings.statusbarColorProcessing =
+                                value;
+                            await this.plugin.saveSettings();
+                        });
+                });
+        }
     }
 
     private renderPromptSettings(containerEl: HTMLElement) {
