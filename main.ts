@@ -10,12 +10,14 @@ import { StatusBar } from "src/statusBar";
 import { Transcriber } from "src/transcriber";
 import { addContextMenus } from "./src/contextMenus";
 import { RecorderControlPanel } from "src/recorderControlPanel";
+import { Statistics } from "src/statistics";
 
 export default class GeminiTranscriberPlugin extends Plugin {
     statusBar: StatusBar;
     audioRecorder: AudioRecorder;
     settings: GeminiTranscriberSettings;
     transcriber: Transcriber;
+    statistics: Statistics | undefined;
 
     async onload() {
         await this.loadSettings();
@@ -23,6 +25,11 @@ export default class GeminiTranscriberPlugin extends Plugin {
         this.audioRecorder = new AudioRecorder(this);
         this.statusBar = new StatusBar(this);
         this.transcriber = new Transcriber(this);
+
+        if (this.settings.enableStatistics) {
+            this.statistics = new Statistics(this);
+            this.statistics.load();
+        }
 
         this.addSettingTab(new GeminiTranscriberSettingsTab(this.app, this));
         this.addRibbonIcons();

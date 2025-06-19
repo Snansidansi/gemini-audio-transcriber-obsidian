@@ -40,41 +40,41 @@ export class StatusBar {
                 this.setPause();
                 break;
             case "processing":
-                this.setProcessing;
+                this.setProcessing();
                 break;
         }
     }
 
     private setReady() {
+        this.stopwatch.stop();
         this.spanElem.textContent = "transcriber ready";
         this.spanElem.setCssStyles({
             color: this.plugin.settings.statusbarColorReady,
         });
         this.stopwatch.resetTimerOnly();
-        this.stopwatch.stop();
     }
 
     private setRecording() {
+        this.stopwatch.start();
         this.spanElem.setCssStyles({
             color: this.plugin.settings.statusbarColorRecording,
         });
-        this.stopwatch.start();
     }
 
     private setPause() {
+        this.stopwatch.stop();
         this.spanElem.textContent = "paused";
         this.spanElem.setCssStyles({
             color: this.plugin.settings.statusbarColorPause,
         });
-        this.stopwatch.stop();
     }
 
     private setProcessing() {
+        this.stopwatch.stop();
         this.spanElem.textContent = "processing";
         this.spanElem.setCssStyles({
             color: this.plugin.settings.statusbarColorProcessing,
         });
-        this.stopwatch.stop();
     }
 
     private setRecordingTime(time: string): void {

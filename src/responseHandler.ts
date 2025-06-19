@@ -10,13 +10,17 @@ export class ResponseHandler {
         this.plugin = plugin;
     }
 
-    handleResponse(
+    async handleResponse(
         response: GenerateContentResponse,
         audioFilename: string | undefined,
     ) {
         if (!response.text) {
             return;
         }
+
+        this.plugin.statistics?.addWordsRecieved(response.text);
+        this.plugin.statistics?.incrementTranscribed();
+        await this.plugin.statistics?.save();
 
         this.insertAtCursor(response.text, audioFilename);
         this.createTranscriptFile(response.text, audioFilename);

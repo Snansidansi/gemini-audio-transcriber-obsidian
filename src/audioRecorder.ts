@@ -97,6 +97,10 @@ export class AudioRecorder {
             );
         }
 
+        this.plugin.statistics?.addAudioFileDuration(blob);
+        this.plugin.statistics?.incrementRecorded();
+        await this.plugin.statistics?.save();
+
         this.plugin.transcriber.transcribe(blob, path.basename(filepath));
     }
 

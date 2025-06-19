@@ -1,5 +1,4 @@
 import GeminiTranscriberPlugin from "main";
-import { Notice } from "obsidian";
 import { Transcriber } from "./transcriber";
 
 export function addContextMenus(plugin: GeminiTranscriberPlugin) {

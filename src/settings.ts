@@ -1,5 +1,6 @@
 import GeminiTranscriberPlugin from "main";
 import { App, PluginSettingTab, Setting } from "obsidian";
+import { Statistics } from "./statistics";
 
 export interface GeminiTranscriberSettings {
     apiKey: string;
@@ -146,6 +147,15 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.enableStatistics = value;
                         await this.plugin.saveSettings();
+
+                        if (value) {
+                            this.plugin.statistics = new Statistics(
+                                this.plugin,
+                            );
+                            this.plugin.statistics.load();
+                        } else {
+                            this.plugin.statistics = undefined;
+                        }
                     }),
             );
 

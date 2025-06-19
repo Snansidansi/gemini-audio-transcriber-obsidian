@@ -40,7 +40,7 @@ export class Transcriber {
         try {
             uploadedFile = await this.uploadAudio(blob, blob.type);
             const response = await this.getResponse(uploadedFile);
-            this.responseHandler.handleResponse(response, filename);
+            await this.responseHandler.handleResponse(response, filename);
         } catch (error: unknown) {
             if (error instanceof Error) {
                 if (error.message.contains("API key not valid")) {
