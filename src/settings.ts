@@ -38,7 +38,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
         this.plugin = plugin;
     }
 
-    private setPrompt(): void {
+    private completePrompt(): void {
         if (this.plugin.settings.customPrompt) {
             return;
         }
@@ -101,137 +101,13 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                     .setPlaceholder("english")
                     .onChange(async (value) => {
                         this.plugin.settings.language = value;
-                        this.setPrompt();
+                        this.completePrompt();
                         await this.plugin.saveSettings();
                     })
                     .setDisabled(
                         this.plugin.settings.customPrompt ? true : false,
                     ),
             );
-
-        const customPrompt = new Setting(containerEl)
-            .setName("Custom prompt")
-            .setDesc(
-                "Show and edit the prompt that gets passed to gemini with your audio file. Enabling this setting will disable the language setting (you can set it manually in the prompt).",
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.plugin.settings.customPrompt)
-                    .onChange(async (value) => {
-                        this.plugin.settings.customPrompt = value;
-                        this.setPrompt();
-                        await this.plugin.saveSettings();
-                        this.display();
-                    }),
-            );
-
-        if (this.plugin.settings.customPrompt) {
-            customPrompt.descEl.createEl("br");
-            customPrompt.descEl.createEl("br");
-            customPrompt.descEl
-                .createEl("span", {
-                    text: "\nDisabeling this option after changing the prompt manually will reset the promt to the default prompt.",
-                })
-                .setCssStyles({ color: "red" });
-        }
-
-        if (this.plugin.settings.customPrompt) {
-            const promptSetting = new Setting(containerEl)
-                .setName("Prompt")
-                .setDesc(
-                    "This is the prompt that gets passed to gemini with your audiofile. You can edit it manually however you like it.",
-                )
-                .addTextArea((textArea) =>
-                    textArea
-                        .setValue(this.plugin.settings.prompt)
-                        .onChange(async (value) => {
-                            this.plugin.settings.prompt = value;
-                            await this.plugin.saveSettings();
-                        })
-                        .inputEl.setCssStyles({
-                            width: "-webkit-fill-available",
-                            height: "5em",
-                        }),
-                );
-
-            promptSetting.settingEl.setCssStyles({
-                alignItems: "initial",
-            });
-            promptSetting.infoEl.setCssStyles({ maxWidth: "30%" });
-        }
-
-        new Setting(containerEl)
-            .setName("Save audio file")
-            .setDesc("Save the recorded audiofiles in the vault.")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.plugin.settings.saveAudioFile)
-                    .onChange(async (value) => {
-                        this.plugin.settings.saveAudioFile = value;
-                        await this.plugin.saveSettings();
-                        this.display();
-                    }),
-            );
-
-        if (this.plugin.settings.saveAudioFile) {
-            new Setting(containerEl)
-                .setName("Save audio file at note location")
-                .setDesc(
-                    "If a note is open, the audio file for the transcription will be saved with that note, instead of the default audio file save location.",
-                )
-                .addToggle((toggle) =>
-                    toggle
-                        .setValue(this.plugin.settings.saveByNoteLocation)
-                        .onChange(async (value) => {
-                            this.plugin.settings.saveByNoteLocation = value;
-                            await this.plugin.saveSettings();
-                        }),
-                );
-
-            new Setting(containerEl)
-                .setName("Save location for audio files")
-                .setDesc(
-                    "Enter a location inside your vault where the audio files should be saved.",
-                )
-                .addText((text) =>
-                    text
-                        .setValue(this.plugin.settings.audioFileSaveLocation)
-                        .setPlaceholder("attachment/audio")
-                        .onChange(async (value) => {
-                            this.plugin.settings.audioFileSaveLocation = value;
-                            await this.plugin.saveSettings();
-                        }),
-                );
-
-            new Setting(containerEl)
-                .setName("Save location for transcripts")
-                .setDesc(
-                    "Enter a location inside your vault where the transcripts should be saved if no editor is opened.",
-                )
-                .addText((text) =>
-                    text
-                        .setValue(this.plugin.settings.transcriptSaveLocation)
-                        .setPlaceholder("notes/transcripts")
-                        .onChange(async (value) => {
-                            this.plugin.settings.transcriptSaveLocation = value;
-                            await this.plugin.saveSettings();
-                        }),
-                );
-
-            new Setting(containerEl)
-                .setName("Embed audio file in current note")
-                .setDesc(
-                    "If enabled the recorded audio file will be embedded before the transcription.",
-                )
-                .addToggle((toggle) =>
-                    toggle
-                        .setValue(this.plugin.settings.embedAudioFile)
-                        .onChange(async (value) => {
-                            this.plugin.settings.embedAudioFile = value;
-                            await this.plugin.saveSettings();
-                        }),
-                );
-        }
 
         new Setting(containerEl)
             .setName("Display status in the statusbar")
@@ -257,5 +133,143 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                     }),
             );
+
+        this.renderPromptSettings(containerEl);
+        this.renderSaveAudioSettings(containerEl);
+    }
+
+    private renderPromptSettings(containerEl: HTMLElement) {
+        const customPrompt = new Setting(containerEl)
+            .setName("Custom prompt")
+            .setHeading()
+            .setDesc(
+                "Show and edit the prompt that gets passed to gemini with your audio file. Enabling this setting will disable the language setting (you can set it manually in the prompt).",
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.plugin.settings.customPrompt)
+                    .onChange(async (value) => {
+                        this.plugin.settings.customPrompt = value;
+                        this.completePrompt();
+                        await this.plugin.saveSettings();
+                        this.display();
+                    }),
+            );
+
+        if (this.plugin.settings.customPrompt) {
+            customPrompt.descEl.createEl("br");
+            customPrompt.descEl.createEl("br");
+            customPrompt.descEl
+                .createEl("span", {
+                    text: "\nDisabeling this option after changing the prompt manually will reset the promt to the default prompt.",
+                })
+                .setCssStyles({ color: "red" });
+        }
+
+        if (this.plugin.settings.customPrompt) {
+            const promptSetting = new Setting(containerEl)
+                .setName("Prompt")
+                .setClass("indent-setting")
+                .setDesc(
+                    "This is the prompt that gets passed to gemini with your audiofile. You can edit it manually however you like it.",
+                )
+                .addTextArea((textArea) =>
+                    textArea
+                        .setValue(this.plugin.settings.prompt)
+                        .onChange(async (value) => {
+                            this.plugin.settings.prompt = value;
+                            await this.plugin.saveSettings();
+                        })
+                        .inputEl.setCssStyles({
+                            width: "-webkit-fill-available",
+                            height: "5em",
+                        }),
+                );
+
+            promptSetting.settingEl.setCssStyles({
+                alignItems: "initial",
+            });
+            promptSetting.infoEl.setCssStyles({ maxWidth: "30%" });
+        }
+    }
+
+    private renderSaveAudioSettings(containerEl: HTMLElement) {
+        new Setting(containerEl)
+            .setName("Save audio file")
+            .setHeading()
+            .setDesc("Save the recorded audiofiles in the vault.")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.plugin.settings.saveAudioFile)
+                    .onChange(async (value) => {
+                        this.plugin.settings.saveAudioFile = value;
+                        await this.plugin.saveSettings();
+                        this.display();
+                    }),
+            );
+
+        if (this.plugin.settings.saveAudioFile) {
+            new Setting(containerEl)
+                .setName("Save audio file at note location")
+                .setDesc(
+                    "If a note is open, the audio file for the transcription will be saved with that note, instead of the default audio file save location.",
+                )
+                .setClass("indent-setting")
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(this.plugin.settings.saveByNoteLocation)
+                        .onChange(async (value) => {
+                            this.plugin.settings.saveByNoteLocation = value;
+                            await this.plugin.saveSettings();
+                        }),
+                );
+
+            new Setting(containerEl)
+                .setName("Save location for audio files")
+                .setDesc(
+                    "Enter a location inside your vault where the audio files should be saved.",
+                )
+                .setClass("indent-setting")
+                .addText((text) =>
+                    text
+                        .setValue(this.plugin.settings.audioFileSaveLocation)
+                        .setPlaceholder("attachment/audio")
+                        .onChange(async (value) => {
+                            this.plugin.settings.audioFileSaveLocation = value;
+                            await this.plugin.saveSettings();
+                        }),
+                );
+
+            new Setting(containerEl)
+                .setName("Save location for transcripts")
+                .setDesc(
+                    "Enter a location inside your vault where the transcripts should be saved if no editor is opened.",
+                )
+                .setClass("indent-setting")
+                .addText((text) =>
+                    text
+                        .setValue(this.plugin.settings.transcriptSaveLocation)
+                        .setPlaceholder("notes/transcripts")
+                        .onChange(async (value) => {
+                            this.plugin.settings.transcriptSaveLocation = value;
+                            await this.plugin.saveSettings();
+                        }),
+                );
+
+            new Setting(containerEl)
+                .setName("Embed audio file in current note")
+                .setDesc(
+                    "If enabled the recorded audio file will be embedded before the transcription.",
+                )
+                .setClass("indent-setting")
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(this.plugin.settings.embedAudioFile)
+                        .onChange(async (value) => {
+                            this.plugin.settings.embedAudioFile = value;
+                            await this.plugin.saveSettings();
+                        }),
+                );
+        }
     }
 }
