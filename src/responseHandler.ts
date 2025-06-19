@@ -1,6 +1,6 @@
 import { GenerateContentResponse } from "@google/genai";
 import GeminiTranscriberPlugin from "main";
-import { MarkdownView } from "obsidian";
+import { MarkdownEditView, MarkdownView } from "obsidian";
 import * as path from "path";
 
 export class ResponseHandler {
@@ -72,6 +72,15 @@ export class ResponseHandler {
             filename,
         );
 
-        this.plugin.app.vault.create(filepath, content);
+        this.plugin.app.vault.create(filepath, content).then((file) => {
+            const recentLeaf = this.plugin.app.workspace.getMostRecentLeaf();
+            if (recentLeaf && recentLeaf.view.getViewType() === "empty") {
+                recentLeaf.openFile(file);
+                return;
+            }
+
+            const leaf = this.plugin.app.workspace.getLeaf("tab");
+            leaf.openFile(file);
+        });
     }
 }
