@@ -1,5 +1,3 @@
-import { Notice } from "obsidian";
-
 // eslint-disable-next-line no-unused-vars
 type timeCallback = (formattedTime: string) => void;
 
@@ -13,6 +11,7 @@ export class Stopwatch {
     }
 
     start() {
+        this.callback(this.formatTime());
         this.intervallID ??= setInterval(() => {
             this.timeInSec++;
             this.callback(this.formatTime());
@@ -35,6 +34,11 @@ export class Stopwatch {
         this.stop();
         this.timeInSec = 0;
         this.callback(this.formatTime());
+    }
+
+    resetTimerOnly() {
+        this.stop();
+        this.timeInSec = 0;
     }
 
     formatTime(): string {
