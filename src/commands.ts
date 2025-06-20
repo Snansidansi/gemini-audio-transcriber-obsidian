@@ -5,7 +5,7 @@ import { StatisticsModal } from "./statistics";
 export function addCommands(plugin: GeminiTranscriberPlugin): void {
     plugin.addCommand({
         id: "start-stop-recording",
-        name: "Toggle Recording",
+        name: "Start/Stop Recording",
         callback: () => {
             if (plugin.audioRecorder.getState() === undefined) {
                 plugin.audioRecorder.startRecording();
