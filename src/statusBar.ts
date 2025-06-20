@@ -13,7 +13,7 @@ export class StatusBar {
     constructor(plugin: GeminiTranscriberPlugin) {
         this.stopwatch = new Stopwatch((time) => {
             this.setRecordingTime(time);
-        });
+        }, plugin);
 
         this.plugin = plugin;
         this.statusBarItem = plugin.addStatusBarItem();

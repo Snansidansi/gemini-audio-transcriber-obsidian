@@ -14,7 +14,10 @@ export class RecorderControlPanel extends Modal {
     constructor(plugin: GeminiTranscriberPlugin) {
         super(plugin.app);
         this.plugin = plugin;
-        this.stopwatch = new Stopwatch(this.updateStopwatchDisplay.bind(this));
+        this.stopwatch = new Stopwatch(
+            this.updateStopwatchDisplay.bind(this),
+            plugin,
+        );
 
         if (this.plugin.audioRecorder.getState() !== undefined) {
             new Notice("Please stop your current recording first.");

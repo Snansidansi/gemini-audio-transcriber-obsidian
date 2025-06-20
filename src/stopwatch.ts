@@ -1,21 +1,27 @@
+import GeminiTranscriberPlugin from "main";
+
 // eslint-disable-next-line no-unused-vars
 type timeCallback = (formattedTime: string) => void;
 
 export class Stopwatch {
     private timeInSec = 0;
     private callback: timeCallback;
-    private intervallID: NodeJS.Timer | null;
+    private intervallID: number | null;
+    private plugin: GeminiTranscriberPlugin;
 
-    constructor(callback: timeCallback) {
+    constructor(callback: timeCallback, plugin: GeminiTranscriberPlugin) {
         this.callback = callback;
+        this.plugin = plugin;
     }
 
     start() {
         this.callback(this.formatTime());
-        this.intervallID ??= setInterval(() => {
-            this.timeInSec++;
-            this.callback(this.formatTime());
-        }, 1000);
+        this.intervallID = this.plugin.registerInterval(
+            window.setInterval(() => {
+                this.timeInSec++;
+                this.callback(this.formatTime());
+            }, 1000),
+        );
     }
 
     stop() {
@@ -23,7 +29,7 @@ export class Stopwatch {
             return;
         }
 
-        clearInterval(this.intervallID);
+        window.clearInterval(this.intervallID);
         this.intervallID = null;
     }
 
