@@ -17,10 +17,13 @@ export function addContextMenus(plugin: GeminiTranscriberPlugin) {
                         const fileExtension = file.name.split(".").pop();
                         const mimeType = "audio/" + fileExtension;
 
+                        const tfile = plugin.app.vault.getFileByPath(file.path);
+                        if (!tfile) {
+                            return;
+                        }
+
                         const arrayBuffer =
-                            await plugin.app.vault.adapter.readBinary(
-                                file.path,
-                            );
+                            await plugin.app.vault.readBinary(tfile);
                         const blob = new Blob([arrayBuffer], {
                             type: mimeType,
                         });
