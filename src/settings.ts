@@ -26,7 +26,7 @@ export const DEFAULT_SETTINGS: Partial<GeminiTranscriberSettings> = {
     modelName: "gemini-2.0-flash",
     language: "english",
     customPrompt: false,
-    prompt: "Transcribe the audio to markdown, removing filler words. Language: ",
+    prompt: "Transcribe the audio to markdown, removing filler words, be precise and don't interpret anything. Language: ",
     saveAudioFile: true,
     audioFileSaveLocation: "",
     transcriptSaveLocation: "",
