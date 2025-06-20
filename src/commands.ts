@@ -6,7 +6,6 @@ export function addCommands(plugin: GeminiTranscriberPlugin): void {
     plugin.addCommand({
         id: "start-stop-recording",
         name: "Toggle Recording",
-        hotkeys: [{ modifiers: ["Alt"], key: "w" }],
         callback: () => {
             if (plugin.audioRecorder.getState() === undefined) {
                 plugin.audioRecorder.startRecording();
@@ -23,7 +22,6 @@ export function addCommands(plugin: GeminiTranscriberPlugin): void {
     plugin.addCommand({
         id: "pause-resume-recording",
         name: "Pause/Resume recording",
-        hotkeys: [{ modifiers: ["Alt"], key: "p" }],
         checkCallback: (checking: boolean) => {
             if (plugin.audioRecorder.getState() === "recording") {
                 if (!checking) {
@@ -50,7 +48,6 @@ export function addCommands(plugin: GeminiTranscriberPlugin): void {
     plugin.addCommand({
         id: "abort-recording",
         name: "Abort recording",
-        hotkeys: [{ modifiers: ["Alt"], key: "e" }],
         checkCallback: (checking: boolean) => {
             if (plugin.audioRecorder.getState() === "recording") {
                 if (!checking) {
