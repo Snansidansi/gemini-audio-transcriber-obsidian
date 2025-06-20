@@ -23,6 +23,7 @@ export interface GeminiTranscriberSettings {
 }
 
 export const DEFAULT_SETTINGS: Partial<GeminiTranscriberSettings> = {
+    apiKey: "",
     modelName: "gemini-2.0-flash",
     language: "english",
     customPrompt: false,
