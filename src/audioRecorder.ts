@@ -1,6 +1,5 @@
 import GeminiTranscriberPlugin from "main";
-import { Notice } from "obsidian";
-import * as path from "path";
+import { normalizePath, Notice } from "obsidian";
 
 export class AudioRecorder {
     private plugin: GeminiTranscriberPlugin;
@@ -89,10 +88,10 @@ export class AudioRecorder {
             type: this.mediaRecorder.mimeType,
         });
 
-        const filepath = await this.getAndCreateSavePath();
+        const [filePath, fileName] = await this.getAndCreateSavePath();
         if (this.plugin.settings.saveAudioFile) {
             this.plugin.app.vault.createBinary(
-                filepath,
+                filePath,
                 await blob.arrayBuffer(),
             );
         }
@@ -101,12 +100,14 @@ export class AudioRecorder {
         this.plugin.statistics?.incrementRecorded();
         await this.plugin.statistics?.save();
 
-        this.plugin.transcriber.transcribe(blob, path.basename(filepath));
+        this.plugin.transcriber.transcribe(blob, fileName);
     }
 
-    private async getAndCreateSavePath(): Promise<string> {
+    private async getAndCreateSavePath(): Promise<
+        readonly [filePath: string, fileName: string]
+    > {
         if (!this.plugin.settings.saveAudioFile) {
-            return "";
+            return ["", ""];
         }
 
         const fileName = `recording-${Date.now()}.webm`;
@@ -116,7 +117,7 @@ export class AudioRecorder {
             if (activeFile) {
                 const parent = activeFile.parent;
                 const filePath = parent ? parent.path : "";
-                return path.join(filePath, fileName);
+                return [normalizePath(filePath + "/" + fileName), fileName];
             }
         }
 
@@ -131,6 +132,6 @@ export class AudioRecorder {
             }
         }
 
-        return path.join(filePath, fileName);
+        return [normalizePath(filePath + "/" + fileName), fileName];
     }
 }

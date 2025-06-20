@@ -1,7 +1,6 @@
 import { GenerateContentResponse } from "@google/genai";
 import GeminiTranscriberPlugin from "main";
-import { MarkdownView, Notice } from "obsidian";
-import * as path from "path";
+import { MarkdownView, normalizePath, Notice } from "obsidian";
 
 export class ResponseHandler {
     private plugin: GeminiTranscriberPlugin;
@@ -78,7 +77,7 @@ export class ResponseHandler {
             }
         }
 
-        filepath = path.join(filepath, filename);
+        filepath = normalizePath(filepath + "/" + filename);
 
         this.plugin.app.vault.create(filepath, content).then((file) => {
             const recentLeaf = this.plugin.app.workspace.getMostRecentLeaf();
