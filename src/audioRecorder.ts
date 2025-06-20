@@ -104,7 +104,11 @@ export class AudioRecorder {
         this.plugin.transcriber.transcribe(blob, path.basename(filepath));
     }
 
-    private async getAndCreateSavePath() {
+    private async getAndCreateSavePath(): Promise<string> {
+        if (!this.plugin.settings.saveAudioFile) {
+            return "";
+        }
+
         const fileName = `recording-${Date.now()}.webm`;
 
         if (this.plugin.settings.saveByNoteLocation) {
