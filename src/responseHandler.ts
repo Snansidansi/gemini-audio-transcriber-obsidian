@@ -1,6 +1,6 @@
 import { GenerateContentResponse } from "@google/genai";
 import GeminiTranscriberPlugin from "main";
-import { MarkdownView, normalizePath, Notice } from "obsidian";
+import { normalizePath, Notice } from "obsidian";
 
 export class ResponseHandler {
     private plugin: GeminiTranscriberPlugin;
@@ -28,14 +28,13 @@ export class ResponseHandler {
     }
 
     private insertAtCursor(text: string, audioFilename: string | undefined) {
-        const markdownView =
-            this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
-        if (!markdownView?.editor) {
-            return false;
+        const editor = this.plugin.app.workspace.activeEditor?.editor;
+        if (!editor) {
+            return;
         }
 
-        markdownView.editor.replaceSelection(this.getAudioEmbed(audioFilename));
-        markdownView.editor.replaceSelection(text);
+        editor.replaceSelection(this.getAudioEmbed(audioFilename));
+        editor.replaceSelection(text);
 
         return true;
     }
@@ -60,9 +59,8 @@ export class ResponseHandler {
         text: string,
         audioFilename: string | undefined,
     ) {
-        const markdownView =
-            this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
-        if (markdownView?.editor) {
+        const editor = this.plugin.app.workspace.activeEditor?.editor;
+        if (editor) {
             return;
         }
 
