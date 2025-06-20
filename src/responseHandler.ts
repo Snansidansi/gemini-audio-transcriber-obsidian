@@ -1,6 +1,6 @@
 import { GenerateContentResponse } from "@google/genai";
 import GeminiTranscriberPlugin from "main";
-import { MarkdownEditView, MarkdownView } from "obsidian";
+import { MarkdownView, Notice } from "obsidian";
 import * as path from "path";
 
 export class ResponseHandler {
@@ -55,7 +55,7 @@ export class ResponseHandler {
         return "";
     }
 
-    private createTranscriptFile(
+    private async createTranscriptFile(
         text: string,
         audioFilename: string | undefined,
     ) {
@@ -67,10 +67,18 @@ export class ResponseHandler {
 
         const content = this.getAudioEmbed(audioFilename) + text;
         const filename = `transcript-${Date.now()}.md`;
-        const filepath = path.join(
-            this.plugin.settings.transcriptSaveLocation,
-            filename,
-        );
+
+        let filepath = this.plugin.settings.transcriptSaveLocation;
+        if (!this.plugin.app.vault.getFolderByPath(filepath)) {
+            try {
+                await this.plugin.app.vault.createFolder(filepath);
+            } catch (error) {
+                console.log(error);
+                new Notice(error, 0);
+            }
+        }
+
+        filepath = path.join(filepath, filename);
 
         this.plugin.app.vault.create(filepath, content).then((file) => {
             const recentLeaf = this.plugin.app.workspace.getMostRecentLeaf();
