@@ -23,6 +23,8 @@ export class ResponseHandler {
 
         this.insertAtCursor(response.text, audioFilename);
         this.createTranscriptFile(response.text, audioFilename);
+
+        new Notice("Finished transcription");
     }
 
     private insertAtCursor(text: string, audioFilename: string | undefined) {
