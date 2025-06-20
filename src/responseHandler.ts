@@ -67,7 +67,10 @@ export class ResponseHandler {
         const filename = `transcript-${Date.now()}.md`;
 
         let filepath = this.plugin.settings.transcriptSaveLocation;
-        if (!this.plugin.app.vault.getFolderByPath(filepath)) {
+        if (
+            !this.plugin.app.vault.getFolderByPath(filepath) &&
+            this.plugin.settings.transcriptSaveLocation !== ""
+        ) {
             try {
                 await this.plugin.app.vault.createFolder(filepath);
             } catch (error) {
