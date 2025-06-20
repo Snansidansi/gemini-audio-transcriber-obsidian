@@ -9,6 +9,7 @@ export class Statistics {
         timesRecorded: 0,
         secondsRecorded: 0,
         filesTranscribed: 0,
+        secondsTranscribed: 0,
         wordsRecived: 0,
     };
 
@@ -33,17 +34,34 @@ export class Statistics {
         this.statsData.wordsRecived += response.split(" ").length;
     }
 
-    addAudioFileDuration(audioBlob: Blob) {
-        const reader = new FileReader();
-        reader.onload = () => {
-            const arraybuffer = reader.result as ArrayBuffer;
-            const audioContext = new AudioContext();
+    async addAudioFileDuration(audioBlob: Blob) {
+        const duration = await this.getDurationFromAudio(audioBlob);
+        this.statsData.secondsRecorded += duration;
+    }
 
-            audioContext.decodeAudioData(arraybuffer, (audioBuffer) => {
-                this.statsData.secondsRecorded += audioBuffer.duration;
-            });
-        };
-        reader.readAsArrayBuffer(audioBlob);
+    async addTranscribedDuration(audioBlob: Blob) {
+        const duration = await this.getDurationFromAudio(audioBlob);
+        this.statsData.secondsTranscribed += duration;
+    }
+
+    private getDurationFromAudio(audioBlob: Blob): Promise<number> {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const arraybuffer = reader.result as ArrayBuffer;
+                const audioContext = new AudioContext();
+
+                audioContext.decodeAudioData(arraybuffer, (audioBuffer) => {
+                    resolve(audioBuffer.duration);
+                });
+            };
+
+            reader.onerror = () => {
+                resolve(0);
+            };
+
+            reader.readAsArrayBuffer(audioBlob);
+        });
     }
 
     /**
@@ -53,6 +71,7 @@ export class Statistics {
         this.statsData.timesRecorded = 0;
         this.statsData.secondsRecorded = 0;
         this.statsData.filesTranscribed = 0;
+        this.statsData.secondsTranscribed = 0;
         this.statsData.wordsRecived = 0;
         await this.save();
     }
@@ -128,13 +147,18 @@ export class StatisticsModal extends Modal {
         this.createEntry("Total recordings", statsData.timesRecorded);
 
         this.createEntry(
-            "Total recording time (HH:MM:SS)",
+            "Total recording time",
             this.formatTime(Math.round(statsData.secondsRecorded)),
         );
 
         this.createEntry(
             "Total files and recordings transcribed",
             statsData.filesTranscribed,
+        );
+
+        this.createEntry(
+            "Total transcribed audio duration",
+            this.formatTime(Math.round(statsData.secondsTranscribed)),
         );
 
         this.createEntry("Total words transcribed", statsData.wordsRecived);

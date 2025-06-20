@@ -18,7 +18,6 @@ export class ResponseHandler {
         }
 
         this.plugin.statistics?.addWordsRecieved(response.text);
-        this.plugin.statistics?.incrementTranscribed();
         await this.plugin.statistics?.save();
 
         this.insertAtCursor(response.text, audioFilename);
