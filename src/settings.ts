@@ -137,6 +137,21 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Save location for transcripts")
+            .setDesc(
+                "Enter a location inside your vault where the transcripts should be saved if no editor is opened.",
+            )
+            .addText((text) =>
+                text
+                    .setValue(this.plugin.settings.transcriptSaveLocation)
+                    .setPlaceholder("notes/transcripts")
+                    .onChange(async (value) => {
+                        this.plugin.settings.transcriptSaveLocation = value;
+                        await this.plugin.saveSettings();
+                    }),
+            );
+
+        new Setting(containerEl)
             .setName("Enable statistics")
             .setDesc(
                 "Collect plugin usage statistics and view them with a command.",
@@ -350,22 +365,6 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                         .setPlaceholder("attachment/audio")
                         .onChange(async (value) => {
                             this.plugin.settings.audioFileSaveLocation = value;
-                            await this.plugin.saveSettings();
-                        }),
-                );
-
-            new Setting(containerEl)
-                .setName("Save location for transcripts")
-                .setDesc(
-                    "Enter a location inside your vault where the transcripts should be saved if no editor is opened.",
-                )
-                .setClass("indent-setting")
-                .addText((text) =>
-                    text
-                        .setValue(this.plugin.settings.transcriptSaveLocation)
-                        .setPlaceholder("notes/transcripts")
-                        .onChange(async (value) => {
-                            this.plugin.settings.transcriptSaveLocation = value;
                             await this.plugin.saveSettings();
                         }),
                 );
