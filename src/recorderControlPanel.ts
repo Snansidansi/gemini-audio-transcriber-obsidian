@@ -9,14 +9,16 @@ export class RecorderControlPanel extends Modal {
     private abortBtn: HTMLButtonElement;
     private pauseResumeBtn: HTMLButtonElement;
     private stopwatch: Stopwatch;
+    private alreadyRecording = false;
 
     constructor(plugin: GeminiTranscriberPlugin) {
         super(plugin.app);
         this.plugin = plugin;
         this.stopwatch = new Stopwatch(this.updateStopwatchDisplay.bind(this));
 
-        if (this.plugin.audioRecorder.getState() !== "inactive") {
+        if (this.plugin.audioRecorder.getState() !== undefined) {
             new Notice("Please stop your current recording first.");
+            this.alreadyRecording = true;
             return;
         }
 
@@ -35,6 +37,12 @@ export class RecorderControlPanel extends Modal {
         this.updateStopwatchDisplay(this.stopwatch.formatTime());
 
         this.createButtonDiv();
+    }
+
+    onOpen(): void {
+        if (this.alreadyRecording) {
+            this.close();
+        }
     }
 
     private createButtonDiv() {
@@ -66,7 +74,7 @@ export class RecorderControlPanel extends Modal {
     }
 
     private handleStartStop(): void {
-        if (this.plugin.audioRecorder.getState() === "inactive") {
+        if (this.plugin.audioRecorder.getState() === undefined) {
             this.plugin.audioRecorder.startRecording();
             this.startStopBtn.setText("Stop");
             this.pauseResumeBtn.disabled = false;
@@ -82,7 +90,10 @@ export class RecorderControlPanel extends Modal {
     }
 
     onClose(): void {
-        if (this.plugin.audioRecorder.getState() === "inactive") {
+        if (
+            this.plugin.audioRecorder.getState() === undefined ||
+            this.alreadyRecording
+        ) {
             return;
         }
 
@@ -104,7 +115,7 @@ export class RecorderControlPanel extends Modal {
     }
 
     private handleAbort(): void {
-        if (this.plugin.audioRecorder.getState() === "inactive") {
+        if (this.plugin.audioRecorder.getState() === undefined) {
             return;
         }
 

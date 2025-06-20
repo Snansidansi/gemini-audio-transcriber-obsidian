@@ -4,30 +4,39 @@ import { normalizePath, Notice } from "obsidian";
 export class AudioRecorder {
     private plugin: GeminiTranscriberPlugin;
     private chunks: Blob[] = [];
-    private mediaRecorder: MediaRecorder;
+    private mediaRecorder: MediaRecorder | null = null;
     private abort = false;
 
     private static mimeType = "audio/webm; codecs=opus";
 
     constructor(plugin: GeminiTranscriberPlugin) {
         this.plugin = plugin;
-        this.setup();
     }
 
-    async setup() {
-        await navigator.mediaDevices
-            .getUserMedia({ audio: true })
-            .then(
-                (stream) =>
-                    (this.mediaRecorder = new MediaRecorder(stream, {
-                        mimeType: AudioRecorder.mimeType,
-                    })),
-            )
-            .catch((err) => {
-                const errMsg = `A getUserMedia error occured: ${err}`;
-                console.log(errMsg);
-                new Notice(errMsg, 0);
+    getState(): RecordingState | undefined {
+        if (this.mediaRecorder) {
+            return this.mediaRecorder.state;
+        }
+    }
+
+    async startRecording() {
+        if (this.abort) {
+            return;
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
             });
+            this.mediaRecorder = new MediaRecorder(stream, {
+                mimeType: AudioRecorder.mimeType,
+            });
+        } catch (error) {
+            const errMsg = `A getUserMedia error occured: ${error}`;
+            console.log(errMsg);
+            new Notice(errMsg, 0);
+            return;
+        }
 
         this.mediaRecorder.ondataavailable = (e) => {
             this.chunks.push(e.data);
@@ -36,21 +45,6 @@ export class AudioRecorder {
         this.mediaRecorder.onstop = async () => {
             this.stop();
         };
-    }
-
-    getState() {
-        return this.mediaRecorder.state;
-    }
-
-    startRecording() {
-        if (this.abort) {
-            return;
-        }
-
-        if (!this.mediaRecorder) {
-            new Notice("Error: Recorder not initialized", 0);
-            return;
-        }
 
         this.chunks = [];
         this.mediaRecorder.start();
@@ -58,26 +52,49 @@ export class AudioRecorder {
     }
 
     pauseRecording() {
+        if (!this.mediaRecorder) {
+            return;
+        }
+
         this.mediaRecorder.pause();
         this.plugin.statusBar.setStatus("pause");
     }
 
     resumeRecording() {
+        if (!this.mediaRecorder) {
+            return;
+        }
+
         this.mediaRecorder.resume();
         this.plugin.statusBar.setStatus("recording");
     }
 
     stopRecording() {
+        if (!this.mediaRecorder) {
+            return;
+        }
+
         this.plugin.statusBar.setStatus("processing");
         this.mediaRecorder.stop();
     }
 
     abortRecording() {
+        if (!this.mediaRecorder) {
+            return;
+        }
+
         this.abort = true;
         this.mediaRecorder.stop();
     }
 
     private async stop() {
+        if (!this.mediaRecorder) {
+            return;
+        }
+
+        this.mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+        this.mediaRecorder = null;
+
         if (this.abort) {
             this.plugin.statusBar.setStatus("ready");
             this.abort = false;
@@ -85,7 +102,7 @@ export class AudioRecorder {
         }
 
         const blob = new Blob(this.chunks, {
-            type: this.mediaRecorder.mimeType,
+            type: AudioRecorder.mimeType,
         });
 
         const [filePath, fileName] = await this.getAndCreateSavePath();

@@ -8,7 +8,7 @@ export function addCommands(plugin: GeminiTranscriberPlugin): void {
         name: "Toggle Recording",
         hotkeys: [{ modifiers: ["Alt"], key: "w" }],
         callback: () => {
-            if (plugin.audioRecorder.getState() === "inactive") {
+            if (plugin.audioRecorder.getState() === undefined) {
                 plugin.audioRecorder.startRecording();
                 return;
             }
