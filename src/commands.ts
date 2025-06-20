@@ -1,5 +1,6 @@
 import GeminiTranscriberPlugin from "main";
 import { Notice } from "obsidian";
+import { StatisticsModal } from "./statistics";
 
 export function addCommands(plugin: GeminiTranscriberPlugin): void {
     plugin.addCommand({
@@ -60,6 +61,20 @@ export function addCommands(plugin: GeminiTranscriberPlugin): void {
                 return true;
             }
 
+            return false;
+        },
+    });
+
+    plugin.addCommand({
+        id: "show-statistics",
+        name: "Show statistics",
+        checkCallback: (checking: boolean) => {
+            if (plugin.settings.enableStatistics) {
+                if (!checking) {
+                    new StatisticsModal(plugin).open();
+                }
+                return true;
+            }
             return false;
         },
     });
