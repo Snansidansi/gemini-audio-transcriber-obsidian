@@ -113,7 +113,7 @@ export class AudioRecorder {
             );
         }
 
-        this.plugin.statistics?.addAudioFileDuration(blob);
+        await this.plugin.statistics?.addAudioFileDuration(blob);
         this.plugin.statistics?.incrementRecorded();
         await this.plugin.statistics?.save();
 

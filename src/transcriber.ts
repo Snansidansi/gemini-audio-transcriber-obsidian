@@ -42,7 +42,7 @@ export class Transcriber {
             const response = await this.getResponse(uploadedFile);
             await this.responseHandler.handleResponse(response, filename);
 
-            this.plugin.statistics?.addTranscribedDuration(blob);
+            await this.plugin.statistics?.addTranscribedDuration(blob);
             this.plugin.statistics?.incrementTranscribed();
             this.plugin.statistics?.save();
         } catch (error: unknown) {
