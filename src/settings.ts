@@ -1,6 +1,7 @@
 import GeminiTranscriberPlugin from "main";
 import { App, PluginSettingTab, Setting } from "obsidian";
 import { Statistics } from "./statistics";
+import { StatusBar } from "./statusBar";
 
 export interface GeminiTranscriberSettings {
     apiKey: string;
@@ -190,8 +191,21 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.showInStatusBar = value;
                         await this.plugin.saveSettings();
+
+                        if (value) {
+                            this.plugin.statusBar = new StatusBar(this.plugin);
+                        } else {
+                            this.plugin.statusBar?.remove();
+                            this.plugin.statusBar = undefined;
+                        }
+
+                        this.display();
                     }),
             );
+
+        if (!this.plugin.settings.showInStatusBar) {
+            return;
+        }
 
         new Setting(containerEl)
             .setName("Custom status bar colors")
@@ -203,7 +217,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
 
                         if (!value) {
                             this.restoreDefaultStatusBarColors();
-                            this.plugin.statusBar.reloadStatus();
+                            this.plugin.statusBar?.reloadStatus();
                         }
 
                         await this.plugin.saveSettings();
@@ -221,7 +235,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                         .onChange(async (value) => {
                             this.plugin.settings.statusbarColorReady = value;
                             await this.plugin.saveSettings();
-                            this.plugin.statusBar.reloadStatus();
+                            this.plugin.statusBar?.reloadStatus();
                         });
                 });
 
@@ -235,7 +249,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                             this.plugin.settings.statusbarColorRecording =
                                 value;
                             await this.plugin.saveSettings();
-                            this.plugin.statusBar.reloadStatus();
+                            this.plugin.statusBar?.reloadStatus();
                         });
                 });
 
@@ -248,7 +262,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                         .onChange(async (value) => {
                             this.plugin.settings.statusbarColorPause = value;
                             await this.plugin.saveSettings();
-                            this.plugin.statusBar.reloadStatus();
+                            this.plugin.statusBar?.reloadStatus();
                         });
                 });
 
@@ -262,7 +276,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                             this.plugin.settings.statusbarColorProcessing =
                                 value;
                             await this.plugin.saveSettings();
-                            this.plugin.statusBar.reloadStatus();
+                            this.plugin.statusBar?.reloadStatus();
                         });
                 });
         }

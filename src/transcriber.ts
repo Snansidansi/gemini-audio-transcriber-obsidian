@@ -34,7 +34,7 @@ export class Transcriber {
     }
 
     async transcribe(blob: Blob, filename: string | undefined) {
-        this.plugin.statusBar.setStatus("processing");
+        this.plugin.statusBar?.setStatus("processing");
 
         let uploadedFile: File | undefined = undefined;
         try {
@@ -56,7 +56,7 @@ export class Transcriber {
                 }
             }
         } finally {
-            this.plugin.statusBar.setStatus("ready");
+            this.plugin.statusBar?.setStatus("ready");
         }
 
         if (uploadedFile) {

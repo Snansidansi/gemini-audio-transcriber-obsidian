@@ -22,6 +22,11 @@ export class StatusBar {
         this.setStatus("ready");
     }
 
+    remove() {
+        this.stopwatch.stop();
+        this.statusBarItem.remove();
+    }
+
     reloadStatus() {
         this.setStatus(this.status);
     }

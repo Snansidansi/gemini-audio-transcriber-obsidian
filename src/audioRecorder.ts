@@ -48,7 +48,7 @@ export class AudioRecorder {
 
         this.chunks = [];
         this.mediaRecorder.start();
-        this.plugin.statusBar.setStatus("recording");
+        this.plugin.statusBar?.setStatus("recording");
     }
 
     pauseRecording() {
@@ -57,7 +57,7 @@ export class AudioRecorder {
         }
 
         this.mediaRecorder.pause();
-        this.plugin.statusBar.setStatus("pause");
+        this.plugin.statusBar?.setStatus("pause");
     }
 
     resumeRecording() {
@@ -66,7 +66,7 @@ export class AudioRecorder {
         }
 
         this.mediaRecorder.resume();
-        this.plugin.statusBar.setStatus("recording");
+        this.plugin.statusBar?.setStatus("recording");
     }
 
     stopRecording() {
@@ -74,7 +74,7 @@ export class AudioRecorder {
             return;
         }
 
-        this.plugin.statusBar.setStatus("processing");
+        this.plugin.statusBar?.setStatus("processing");
         this.mediaRecorder.stop();
     }
 
@@ -96,7 +96,7 @@ export class AudioRecorder {
         this.mediaRecorder = null;
 
         if (this.abort) {
-            this.plugin.statusBar.setStatus("ready");
+            this.plugin.statusBar?.setStatus("ready");
             this.abort = false;
             return;
         }
