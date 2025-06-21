@@ -18,7 +18,6 @@ export class StatusBar {
         this.plugin = plugin;
         this.statusBarItem = plugin.addStatusBarItem();
         this.spanElem = this.statusBarItem.createEl("span", {});
-        this.spanElem.setCssStyles({ fontSize: "1.2em" });
 
         this.setStatus("ready");
     }
