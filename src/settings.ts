@@ -1,5 +1,5 @@
 import GeminiTranscriberPlugin from "main";
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, normalizePath, PluginSettingTab, Setting } from "obsidian";
 import { Statistics } from "./statistics";
 import { StatusBar } from "./statusBar";
 
@@ -379,7 +379,8 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                         .setValue(this.plugin.settings.audioFileSaveLocation)
                         .setPlaceholder("attachment/audio")
                         .onChange(async (value) => {
-                            this.plugin.settings.audioFileSaveLocation = value;
+                            this.plugin.settings.audioFileSaveLocation =
+                                normalizePath(value);
                             await this.plugin.saveSettings();
                         }),
                 );
