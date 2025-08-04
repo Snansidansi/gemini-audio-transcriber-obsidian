@@ -49,7 +49,10 @@ export function addCommands(plugin: GeminiTranscriberPlugin): void {
         id: "abort-recording",
         name: "Abort recording",
         checkCallback: (checking: boolean) => {
-            if (plugin.audioRecorder.getState() !== "inactive") {
+            if (
+                plugin.audioRecorder.getState() === "recording" ||
+                plugin.audioRecorder.getState() === "paused"
+            ) {
                 if (!checking) {
                     plugin.audioRecorder.abortRecording();
                     new Notice("aborted recording");
