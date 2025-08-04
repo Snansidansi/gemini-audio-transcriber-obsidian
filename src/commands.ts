@@ -6,6 +6,7 @@ export function addCommands(plugin: GeminiTranscriberPlugin): void {
     plugin.addCommand({
         id: "start-stop-recording",
         name: "Start/Stop Recording",
+        icon: "mic",
         callback: () => {
             if (plugin.audioRecorder.getState() === undefined) {
                 plugin.audioRecorder.startRecording();
@@ -22,6 +23,7 @@ export function addCommands(plugin: GeminiTranscriberPlugin): void {
     plugin.addCommand({
         id: "pause-resume-recording",
         name: "Pause/Resume recording",
+        icon: "mic-off",
         checkCallback: (checking: boolean) => {
             if (plugin.audioRecorder.getState() === "recording") {
                 if (!checking) {
@@ -48,6 +50,7 @@ export function addCommands(plugin: GeminiTranscriberPlugin): void {
     plugin.addCommand({
         id: "abort-recording",
         name: "Abort recording",
+        icon: "octagon-x",
         checkCallback: (checking: boolean) => {
             if (
                 plugin.audioRecorder.getState() === "recording" ||
@@ -68,6 +71,7 @@ export function addCommands(plugin: GeminiTranscriberPlugin): void {
     plugin.addCommand({
         id: "show-statistics",
         name: "Show statistics",
+        icon: "chart-no-axes-combined",
         checkCallback: (checking: boolean) => {
             if (plugin.settings.enableStatistics) {
                 if (!checking) {
