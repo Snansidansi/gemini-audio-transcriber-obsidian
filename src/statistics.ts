@@ -52,7 +52,8 @@ export class Statistics {
                 const audioContext = new AudioContext();
 
                 audioContext.decodeAudioData(arraybuffer, (audioBuffer) => {
-                    resolve(audioBuffer.duration);
+                    const duration = audioBuffer.duration;
+                    resolve(Math.round(duration * 100) / 100);
                 });
             };
 
