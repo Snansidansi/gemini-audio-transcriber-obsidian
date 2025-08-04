@@ -1,4 +1,5 @@
 import GeminiTranscriberPlugin from "main";
+import { RecorderControlPanel } from "./recorderControlPanel";
 import { Stopwatch } from "./stopwatch";
 
 type status = "ready" | "recording" | "pause" | "processing";
@@ -18,6 +19,9 @@ export class StatusBar {
         this.plugin = plugin;
         this.statusBarItem = plugin.addStatusBarItem();
         this.spanElem = this.statusBarItem.createEl("span", {});
+        this.spanElem.onClickEvent(() => {
+            new RecorderControlPanel(this.plugin).open();
+        });
 
         this.setStatus("ready");
     }
