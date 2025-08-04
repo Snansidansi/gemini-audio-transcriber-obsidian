@@ -326,7 +326,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                         })
                         .inputEl.setCssStyles({
                             width: "-webkit-fill-available",
-                            height: "5em",
+                            height: "15em",
                         }),
                 );
 
