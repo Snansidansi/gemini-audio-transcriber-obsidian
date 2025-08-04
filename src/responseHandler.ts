@@ -12,6 +12,7 @@ export class ResponseHandler {
     async handleResponse(
         response: GenerateContentResponse,
         audioFilename: string | undefined,
+        toClipboard: boolean,
     ) {
         if (!response.text) {
             return;
@@ -20,10 +21,20 @@ export class ResponseHandler {
         this.plugin.statistics?.addWordsRecieved(response.text);
         await this.plugin.statistics?.save();
 
+        if (toClipboard) {
+            this.saveTranscriptInClipboard(response.text);
+            new Notice("Stored transcription in clipboard");
+            return;
+        }
+
         this.insertAtCursor(response.text, audioFilename);
         this.createTranscriptFile(response.text, audioFilename);
 
         new Notice("Finished transcription");
+    }
+
+    private saveTranscriptInClipboard(text: string) {
+        navigator.clipboard.writeText(text);
     }
 
     private insertAtCursor(text: string, audioFilename: string | undefined) {

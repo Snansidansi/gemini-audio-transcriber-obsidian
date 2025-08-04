@@ -117,7 +117,11 @@ export class AudioRecorder {
         this.plugin.statistics?.incrementRecorded();
         await this.plugin.statistics?.save();
 
-        this.plugin.transcriber.transcribe(blob, fileName);
+        this.plugin.transcriber.transcribe(
+            blob,
+            fileName,
+            this.plugin.settings.saveToClipBoard,
+        );
     }
 
     private async getAndCreateSavePath(): Promise<

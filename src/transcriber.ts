@@ -33,14 +33,22 @@ export class Transcriber {
         this.ai = new GoogleGenAI({ apiKey: this.plugin.settings.apiKey });
     }
 
-    async transcribe(blob: Blob, filename: string | undefined) {
+    async transcribe(
+        blob: Blob,
+        filename: string | undefined,
+        toClipboard: boolean,
+    ) {
         this.plugin.statusBar?.setStatus("processing");
 
         let uploadedFile: File | undefined = undefined;
         try {
             uploadedFile = await this.uploadAudio(blob, blob.type);
             const response = await this.getResponse(uploadedFile);
-            await this.responseHandler.handleResponse(response, filename);
+            await this.responseHandler.handleResponse(
+                response,
+                filename,
+                toClipboard,
+            );
 
             await this.plugin.statistics?.addTranscribedDuration(blob);
             this.plugin.statistics?.incrementTranscribed();

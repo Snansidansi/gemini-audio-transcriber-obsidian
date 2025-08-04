@@ -21,6 +21,7 @@ export interface GeminiTranscriberSettings {
     statusbarColorPause: string;
     statusbarColorProcessing: string;
     enableStatistics: boolean;
+    saveToClipBoard: boolean;
 }
 
 export const DEFAULT_SETTINGS: Partial<GeminiTranscriberSettings> = {
@@ -41,6 +42,7 @@ export const DEFAULT_SETTINGS: Partial<GeminiTranscriberSettings> = {
     statusbarColorPause: "#ffff00",
     statusbarColorProcessing: "#ffa500",
     enableStatistics: true,
+    saveToClipBoard: false,
 };
 
 export class GeminiTranscriberSettingsTab extends PluginSettingTab {
@@ -139,6 +141,20 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Copy transcripts to clipboard")
+            .setDesc(
+                "Enable this option to automatically copy transcripts to your clipboard, so you can paste them (e.g., using Ctrl + V).",
+            )
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.saveToClipBoard)
+                    .onChange(async (value) => {
+                        this.plugin.settings.saveToClipBoard = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(containerEl)
             .setName("Save location for transcripts")
             .setDesc(
                 "Enter a location inside your vault where the transcripts should be saved if no editor is opened.",
@@ -157,7 +173,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
             .setName("Enable statistics")
             .setDesc(
                 "Collect plugin usage statistics and view them with a command.",
-            ) //TODO Insert command name
+            )
             .addToggle((toggle) =>
                 toggle
                     .setValue(this.plugin.settings.enableStatistics)

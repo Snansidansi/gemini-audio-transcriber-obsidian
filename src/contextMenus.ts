@@ -28,7 +28,7 @@ export function addContextMenus(plugin: GeminiTranscriberPlugin) {
                             type: mimeType,
                         });
 
-                        plugin.transcriber.transcribe(blob, file.name);
+                        plugin.transcriber.transcribe(blob, file.name, true);
                     });
             });
         }),
