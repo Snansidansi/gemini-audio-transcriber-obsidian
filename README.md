@@ -29,11 +29,11 @@ The Gemini Transcriber plugin for Obsidian lets you convert audio files or live 
 
 ### Model
 
-You can change the API model depending on whether you want faster or more accurate responses (e.g. if you have a complex prompt). To change the model, check the list of available models on the official [Google](https://ai.google.dev/gemini-api/docs/models) website. For example, valid model names for the plugin are:
+You can change the API model depending on whether you want faster or more accurate responses (e.g. if you have a complex prompt). To change the model, check the list of available models on the official [Google website](https://ai.google.dev/gemini-api/docs/models). For example, valid model names for the plugin are:
 
 - `gemini-2.5-flash`
 - `gemini-2.5-flash-lite`
 
 ### Limits
 
-You can check the rate limits for your selected Gemini API model on the [google website](https://ai.google.dev/gemini-api/docs/rate-limits?hl=de). Gemini is free unless you explicitly sign up for a paid plan. For normal transcription usage, the free plan should be more than enough. If you need more daily requests but don’t want to upgrade to a paid plan, consider using a lighter API model like `gemini-2.5-flash-lite` instead of `gemini-2.5-flash`.
+You can check the rate limits for your selected Gemini API model on the [Google website](https://ai.google.dev/gemini-api/docs/rate-limits?hl=de). Gemini is free unless you explicitly sign up for a paid plan. For normal transcription usage, the free plan should be more than enough. If you need more daily requests but don’t want to upgrade to a paid plan, consider using a lighter API model like `gemini-2.5-flash-lite` instead of `gemini-2.5-flash`.
