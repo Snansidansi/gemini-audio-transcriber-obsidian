@@ -1,9 +1,9 @@
 {
-    "id": "gemini-audio-transcriber",
-    "name": "Gemini Audio Transcriber",
-    "version": "1.0.0",
-    "minAppVersion": "0.15.0",
-    "description": "Create text transcripts from live audio recordings or existing files using Gemini.",
-    "author": "Snansidansi",
-    "isDesktopOnly": false
+	"id": "gemini-audio-transcriber",
+	"name": "Gemini Audio Transcriber",
+	"version": "1.1.0",
+	"minAppVersion": "0.15.0",
+	"description": "Create text transcripts from live audio recordings or existing files using Gemini.",
+	"author": "Snansidansi",
+	"isDesktopOnly": false
 }

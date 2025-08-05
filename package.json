@@ -1,6 +1,6 @@
 {
     "name": "gemini-audio-transcriber",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Create text transcripts from live audio recordings or existing files using Gemini.",
     "main": "main.js",
     "scripts": {
