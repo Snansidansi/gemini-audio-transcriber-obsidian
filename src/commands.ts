@@ -1,6 +1,8 @@
 import GeminiTranscriberPlugin from "main";
 import { Notice } from "obsidian";
+import { openFilePicker } from "./filePicker";
 import { StatisticsModal } from "./statistics";
+import { Transcriber } from "./transcriber";
 
 export function addCommands(plugin: GeminiTranscriberPlugin): void {
     plugin.addCommand({
@@ -80,6 +82,27 @@ export function addCommands(plugin: GeminiTranscriberPlugin): void {
                 return true;
             }
             return false;
+        },
+    });
+
+    plugin.addCommand({
+        id: "open-file-picker",
+        name: "Select audio file from system",
+        icon: "folder-open",
+        callback: async () => {
+            const validFileTypes = Transcriber.validFileFormats.map(
+                (fileType) => "." + fileType,
+            );
+
+            const selectedFile = await openFilePicker(validFileTypes);
+
+            if (!selectedFile) {
+                return;
+            }
+
+            const arrayBuffer = await selectedFile.arrayBuffer();
+            const blob = new Blob([arrayBuffer], { type: selectedFile.type });
+            plugin.transcriber.transcribe(blob, selectedFile.name, false);
         },
     });
 }

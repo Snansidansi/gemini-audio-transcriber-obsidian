@@ -17,6 +17,7 @@ export class Transcriber {
         "ogg",
         "flac",
         "webm",
+        "m4a",
     ] as const;
 
     private plugin: GeminiTranscriberPlugin;
