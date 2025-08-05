@@ -7,7 +7,7 @@ The Gemini Transcriber plugin for Obsidian lets you convert audio files or live 
 - Record audio and transcribe it directly (optionally save the recordings)
 - Insert the transcription at the cursor in Edit mode, or create a new file if in Reading mode
 - Create a custom prompt for Gemini
-- Transcribe audio files from your vault
+- Transcribe audio files from your vault and anywhere from disk
 - Embed recordings above the transcription
 - Choose your Gemini API Model
 - View plugin usage statistics (can be completely disabled in the settings)
@@ -24,6 +24,17 @@ The Gemini Transcriber plugin for Obsidian lets you convert audio files or live 
 2. Enter the language of your audio.
 3. Optionally, add hotkeys for available plugin commands such as starting/stopping or pausing/resuming a recording.
 4. Press your hotkey for start/stop or use the command from the command palette to use the plugin.
+
+## Compatible file types
+
+- wav
+- mp3
+- aiff
+- aac
+- ogg
+- flac
+- webm
+- m4a
 
 ## General information about Gemini
 
