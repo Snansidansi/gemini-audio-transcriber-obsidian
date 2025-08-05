@@ -100,8 +100,15 @@ export function addCommands(plugin: GeminiTranscriberPlugin): void {
                 return;
             }
 
+            const extension = selectedFile.name
+                .slice(selectedFile.name.lastIndexOf(".") + 1)
+                .toLowerCase();
+
             const arrayBuffer = await selectedFile.arrayBuffer();
-            const blob = new Blob([arrayBuffer], { type: selectedFile.type });
+            const blob = new Blob([arrayBuffer], {
+                type: "audio/" + extension,
+            });
+
             plugin.transcriber.transcribe(blob, selectedFile.name, false);
         },
     });
