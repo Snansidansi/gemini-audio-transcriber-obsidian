@@ -112,7 +112,6 @@ export class StatisticsModal extends Modal {
             border: "1px solid #222222",
             overflow: "hidden",
             maxWidth: "42rem",
-            width: "100%",
         });
 
         const header = this.contentEl.createDiv();
