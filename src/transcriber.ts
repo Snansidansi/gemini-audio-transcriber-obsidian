@@ -21,7 +21,7 @@ export class Transcriber {
     ] as const;
 
     private plugin: GeminiTranscriberPlugin;
-    private ai: GoogleGenAI;
+    private ai: GoogleGenAI | undefined;
     private responseHandler: ResponseHandler;
 
     constructor(plugin: GeminiTranscriberPlugin) {
@@ -31,7 +31,17 @@ export class Transcriber {
     }
 
     reloadApiKey() {
-        this.ai = new GoogleGenAI({ apiKey: this.plugin.settings.apiKey });
+        const apiKey = this.plugin.app.secretStorage.getSecret(
+            this.plugin.settings.geminiApiKeySecretName,
+        );
+
+        if (apiKey) {
+            this.ai = new GoogleGenAI({
+                apiKey: apiKey,
+            });
+        } else {
+            this.ai = undefined;
+        }
     }
 
     async transcribe(
@@ -39,6 +49,11 @@ export class Transcriber {
         filename: string | undefined,
         toClipboard: boolean,
     ) {
+        if (!this.ai) {
+            new Notice("Error: No API key configured for Gemini.", 0);
+            return;
+        }
+
         this.plugin.statusBar?.setStatus("processing");
 
         let uploadedFile: File | undefined = undefined;
@@ -79,7 +94,7 @@ export class Transcriber {
     }
 
     private async getResponse(uploadedFile: File) {
-        return await this.ai.models.generateContent({
+        return await this.ai!.models.generateContent({
             model: this.plugin.settings.modelName,
             contents: createUserContent([
                 // file was uploaded before so it has a uri and mimeType
@@ -91,7 +106,7 @@ export class Transcriber {
     }
 
     private async uploadAudio(file: string | Blob, mimeType: string) {
-        const myfile = await this.ai.files.upload({
+        const myfile = await this.ai!.files.upload({
             file: file,
             config: { mimeType: mimeType },
         });
@@ -102,6 +117,6 @@ export class Transcriber {
     private async deleteAudio(file: File) {
         // Uploaded files always have a name generated for them
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        await this.ai.files.delete({ name: file.name! });
+        await this.ai!.files.delete({ name: file.name! });
     }
 }

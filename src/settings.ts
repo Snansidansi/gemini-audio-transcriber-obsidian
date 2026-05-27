@@ -1,10 +1,16 @@
 import GeminiTranscriberPlugin from "main";
-import { App, normalizePath, PluginSettingTab, Setting } from "obsidian";
+import {
+    App,
+    normalizePath,
+    PluginSettingTab,
+    Setting,
+    SecretComponent,
+} from "obsidian";
 import { Statistics } from "./statistics";
 import { StatusBar } from "./statusBar";
 
 export interface GeminiTranscriberSettings {
-    apiKey: string;
+    geminiApiKeySecretName: string;
     modelName: string;
     language: string;
     customPrompt: boolean;
@@ -25,7 +31,7 @@ export interface GeminiTranscriberSettings {
 }
 
 export const DEFAULT_SETTINGS: Partial<GeminiTranscriberSettings> = {
-    apiKey: "",
+    geminiApiKeySecretName: "",
     modelName: "gemini-2.0-flash",
     language: "english",
     customPrompt: false,
@@ -87,16 +93,15 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("API key")
-            .setDesc("Your Gemini api key.")
-            .addText((text) =>
-                text
-                    .setValue(this.plugin.settings.apiKey)
+            .setDesc("Select your Gemini api key.")
+            .addComponent((el) =>
+                new SecretComponent(this.app, el)
+                    .setValue(this.plugin.settings.geminiApiKeySecretName)
                     .onChange(async (value) => {
-                        this.plugin.settings.apiKey = value;
+                        this.plugin.settings.geminiApiKeySecretName = value;
                         this.plugin.transcriber.reloadApiKey();
                         await this.plugin.saveSettings();
-                    })
-                    .inputEl.setCssStyles({ width: "200%" }),
+                    }),
             );
 
         const modelSetting = new Setting(containerEl)
@@ -121,8 +126,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName(
-                `Language ${
-                    this.plugin.settings.customPrompt ? "(disabled)" : ""
+                `Language ${this.plugin.settings.customPrompt ? "(disabled)" : ""
                 }`,
             )
             .setDesc("Specify the language of the input audio.")
