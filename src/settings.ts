@@ -1,17 +1,34 @@
 import GeminiTranscriberPlugin from "main";
 import {
     App,
+    FuzzySuggestModal,
     normalizePath,
+    Notice,
     PluginSettingTab,
     Setting,
     SecretComponent,
 } from "obsidian";
+import {
+    fetchAudioModels,
+    fetchModelProviders,
+    OpenRouterModelCache,
+    OpenRouterModelInfo,
+} from "./openRouterApi";
 import { Statistics } from "./statistics";
 import { StatusBar } from "./statusBar";
 
+export type TranscriptionProviderName = "gemini" | "openrouter";
+
 export interface GeminiTranscriberSettings {
+    provider: TranscriptionProviderName;
     geminiApiKeySecretName: string;
     modelName: string;
+    openRouterApiKeySecretName: string;
+    openRouterModel: string;
+    openRouterModelIsStt: boolean;
+    openRouterProviders: string[];
+    openRouterModelCache: OpenRouterModelCache | undefined;
+    openRouterProviderCache: Record<string, string[]>;
     language: string;
     customPrompt: boolean;
     prompt: string;
@@ -31,8 +48,15 @@ export interface GeminiTranscriberSettings {
 }
 
 export const DEFAULT_SETTINGS: Partial<GeminiTranscriberSettings> = {
+    provider: "gemini",
     geminiApiKeySecretName: "",
     modelName: "gemini-2.0-flash",
+    openRouterApiKeySecretName: "",
+    openRouterModel: "",
+    openRouterModelIsStt: false,
+    openRouterProviders: [],
+    openRouterModelCache: undefined,
+    openRouterProviderCache: {},
     language: "english",
     customPrompt: false,
     prompt: "Transcribe the audio to markdown, removing filler words, be precise and don't interpret anything. Language: ",
@@ -86,43 +110,40 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
             DEFAULT_SETTINGS.statusbarColorProcessing!;
     }
 
+    private isSttSelected(): boolean {
+        return (
+            this.plugin.settings.provider === "openrouter" &&
+            this.plugin.settings.openRouterModelIsStt
+        );
+    }
+
     display(): void {
         const { containerEl } = this;
 
         containerEl.empty();
 
         new Setting(containerEl)
-            .setName("API key")
-            .setDesc("Select your Gemini api key.")
-            .addComponent((el) =>
-                new SecretComponent(this.app, el)
-                    .setValue(this.plugin.settings.geminiApiKeySecretName)
+            .setName("Provider")
+            .setDesc("Choose the backend used for transcription.")
+            .addDropdown((dropdown) =>
+                dropdown
+                    .addOption("gemini", "Gemini")
+                    .addOption("openrouter", "OpenRouter")
+                    .setValue(this.plugin.settings.provider)
                     .onChange(async (value) => {
-                        this.plugin.settings.geminiApiKeySecretName = value;
-                        this.plugin.transcriber.reloadApiKey();
+                        this.plugin.settings.provider =
+                            value as TranscriptionProviderName;
+                        this.plugin.transcriber.reloadProvider();
                         await this.plugin.saveSettings();
+                        this.display();
                     }),
             );
 
-        const modelSetting = new Setting(containerEl)
-            .setName("Model name")
-            .setDesc(
-                "Specify the gemini model that gets used for the transcriptions. The name contains '-' and no spaces.",
-            )
-            .addText((text) =>
-                text
-                    .setValue(this.plugin.settings.modelName)
-                    .onChange(async (value) => {
-                        this.plugin.settings.modelName = value;
-                        await this.plugin.saveSettings();
-                    }),
-            );
-
-        modelSetting.descEl.createEl("br");
-        modelSetting.descEl.createEl("a", {
-            href: "https://ai.google.dev/gemini-api/docs/models",
-            text: "Available models and rate limits",
-        });
+        if (this.plugin.settings.provider === "openrouter") {
+            this.renderOpenRouterSettings(containerEl);
+        } else {
+            this.renderGeminiSettings(containerEl);
+        }
 
         new Setting(containerEl)
             .setName(
@@ -197,8 +218,303 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
             );
 
         this.renderStatusbarSettings(containerEl);
-        this.renderPromptSettings(containerEl);
+
+        if (this.isSttSelected()) {
+            new Setting(containerEl)
+                .setName("Custom prompt")
+                .setHeading()
+                .setDesc(
+                    "For STT models no custom prompt is supported. The selected language is sent as the language parameter instead.",
+                );
+        } else {
+            this.renderPromptSettings(containerEl);
+        }
+
         this.renderSaveAudioSettings(containerEl);
+    }
+
+    private renderGeminiSettings(containerEl: HTMLElement) {
+        new Setting(containerEl)
+            .setName("API key")
+            .setDesc("Select your Gemini api key.")
+            .addComponent((el) =>
+                new SecretComponent(this.app, el)
+                    .setValue(this.plugin.settings.geminiApiKeySecretName)
+                    .onChange(async (value) => {
+                        this.plugin.settings.geminiApiKeySecretName = value;
+                        this.plugin.transcriber.reloadApiKey();
+                        await this.plugin.saveSettings();
+                    }),
+            );
+
+        const modelSetting = new Setting(containerEl)
+            .setName("Model name")
+            .setDesc(
+                "Specify the gemini model that gets used for the transcriptions. The name contains '-' and no spaces.",
+            )
+            .addText((text) =>
+                text
+                    .setValue(this.plugin.settings.modelName)
+                    .onChange(async (value) => {
+                        this.plugin.settings.modelName = value;
+                        await this.plugin.saveSettings();
+                    }),
+            );
+
+        modelSetting.descEl.createEl("br");
+        modelSetting.descEl.createEl("a", {
+            href: "https://ai.google.dev/gemini-api/docs/models",
+            text: "Available models and rate limits",
+        });
+    }
+
+    private renderOpenRouterSettings(containerEl: HTMLElement) {
+        new Setting(containerEl)
+            .setName("API key")
+            .setDesc("Select your OpenRouter api key.")
+            .addComponent((el) =>
+                new SecretComponent(this.app, el)
+                    .setValue(this.plugin.settings.openRouterApiKeySecretName)
+                    .onChange(async (value) => {
+                        this.plugin.settings.openRouterApiKeySecretName =
+                            value;
+                        this.plugin.transcriber.reloadApiKey();
+                        await this.plugin.saveSettings();
+                    }),
+            );
+
+        const cache = this.plugin.settings.openRouterModelCache;
+        const selectedModel = this.plugin.settings.openRouterModel;
+        let desc = "No model selected yet.";
+        if (selectedModel) {
+            const info = cache?.models.find(
+                (model) => model.id === selectedModel,
+            );
+            desc = `Selected: ${info?.name ?? selectedModel} (${selectedModel}), ${
+                info?.isStt ? "STT model" : "chat model"
+            }.`;
+        }
+        if (cache) {
+            desc += ` ${cache.models.length} audio-capable models cached, last refresh ${new Date(
+                cache.fetchedAt,
+            ).toLocaleString()}.`;
+        }
+
+        const modelSetting = new Setting(containerEl)
+            .setName("Model")
+            .setDesc(desc)
+            .addButton((button) =>
+                button
+                    .setButtonText("Select model")
+                    .setCta()
+                    .onClick(() => {
+                        void this.openModelModal();
+                    }),
+            )
+            .addButton((button) =>
+                button.setButtonText("Refresh model list").onClick(async () => {
+                    await this.refreshModelCache();
+                    this.display();
+                }),
+            );
+
+        modelSetting.descEl.createEl("br");
+        modelSetting.descEl.createEl("a", {
+            href: "https://openrouter.ai/models",
+            text: "Browse models on openrouter.ai",
+        });
+
+        this.renderProviderRanking(containerEl);
+    }
+
+    private renderProviderRanking(containerEl: HTMLElement) {
+        const rankingSetting = new Setting(containerEl)
+            .setName("Provider ranking")
+            .setHeading()
+            .setDesc(
+                "Optional: choose which providers should serve the model and in which order (sent as provider.order). With an empty selection OpenRouter uses its default routing.",
+            );
+
+        if (this.isSttSelected()) {
+            rankingSetting.setDesc(
+                "Provider ranking is not supported for STT models: the /audio/transcriptions endpoint does not accept provider.order, so OpenRouter routes automatically.",
+            );
+            return;
+        }
+
+        const selectedModel = this.plugin.settings.openRouterModel;
+        if (!selectedModel) {
+            rankingSetting.setDesc(
+                "Select a model first to configure the provider ranking.",
+            );
+            return;
+        }
+
+        const providers = this.plugin.settings.openRouterProviders;
+
+        providers.forEach((provider, index) => {
+            new Setting(containerEl)
+                .setName(`${index + 1}. ${provider}`)
+                .setClass("indent-setting")
+                .addButton((button) =>
+                    button
+                        .setButtonText("↑")
+                        .setTooltip("Move up")
+                        .setDisabled(index === 0)
+                        .onClick(() => {
+                            this.moveProvider(index, index - 1);
+                        }),
+                )
+                .addButton((button) =>
+                    button
+                        .setButtonText("↓")
+                        .setTooltip("Move down")
+                        .setDisabled(index === providers.length - 1)
+                        .onClick(() => {
+                            this.moveProvider(index, index + 1);
+                        }),
+                )
+                .addButton((button) =>
+                    button.setButtonText("Remove").onClick(async () => {
+                        this.plugin.settings.openRouterProviders =
+                            providers.filter((p) => p !== provider);
+                        await this.plugin.saveSettings();
+                        this.display();
+                    }),
+                );
+        });
+
+        if (providers.length === 0) {
+            new Setting(containerEl)
+                .setName("Routing")
+                .setClass("indent-setting")
+                .setDesc(
+                    "No providers selected: OpenRouter will use its default routing.",
+                );
+        }
+
+        const cachedProviders =
+            this.plugin.settings.openRouterProviderCache[selectedModel];
+
+        if (!cachedProviders) {
+            new Setting(containerEl)
+                .setName("Available providers")
+                .setClass("indent-setting")
+                .setDesc(
+                    "The list of providers serving this model is not loaded yet.",
+                )
+                .addButton((button) =>
+                    button
+                        .setButtonText("Load providers")
+                        .onClick(() => {
+                            void this.loadProviderOptions(selectedModel);
+                        }),
+                );
+            return;
+        }
+
+        const remaining = cachedProviders.filter(
+            (provider) => !providers.includes(provider),
+        );
+
+        new Setting(containerEl)
+            .setName("Add provider")
+            .setClass("indent-setting")
+            .setDesc("Add a provider to the end of the ranking.")
+            .addDropdown((dropdown) => {
+                dropdown.addOption("", "Choose provider…");
+                for (const provider of remaining) {
+                    dropdown.addOption(provider, provider);
+                }
+                dropdown.onChange(async (value) => {
+                    if (!value) {
+                        return;
+                    }
+                    this.plugin.settings.openRouterProviders = [
+                        ...this.plugin.settings.openRouterProviders,
+                        value,
+                    ];
+                    await this.plugin.saveSettings();
+                    this.display();
+                });
+            });
+    }
+
+    private moveProvider(from: number, to: number) {
+        const providers = [...this.plugin.settings.openRouterProviders];
+        const moved = providers[from];
+        providers[from] = providers[to];
+        providers[to] = moved;
+
+        this.plugin.settings.openRouterProviders = providers;
+        void this.plugin.saveSettings().then(() => this.display());
+    }
+
+    private async openModelModal() {
+        if (!this.plugin.settings.openRouterModelCache) {
+            await this.refreshModelCache();
+        }
+
+        const models =
+            this.plugin.settings.openRouterModelCache?.models ?? [];
+
+        if (models.length === 0) {
+            new Notice(
+                "No OpenRouter models available. Check your internet connection and refresh the model list.",
+                0,
+            );
+            return;
+        }
+
+        new OpenRouterModelSuggestModal(this.app, models, async (model) => {
+            this.plugin.settings.openRouterModel = model.id;
+            this.plugin.settings.openRouterModelIsStt = model.isStt;
+            this.plugin.settings.openRouterProviders = [];
+            await this.plugin.saveSettings();
+            void this.loadProviderOptions(model.id);
+            this.display();
+        }).open();
+    }
+
+    private async refreshModelCache() {
+        try {
+            const models = await fetchAudioModels();
+
+            this.plugin.settings.openRouterModelCache = {
+                fetchedAt: Date.now(),
+                models: models,
+            };
+            await this.plugin.saveSettings();
+
+            new Notice(
+                `Loaded ${models.length} audio-capable OpenRouter models.`,
+            );
+        } catch (error: unknown) {
+            console.log(error);
+            new Notice(
+                `Error loading OpenRouter models: ${errorMessage(error)}`,
+                0,
+            );
+        }
+    }
+
+    private async loadProviderOptions(modelId: string) {
+        try {
+            const providers = await fetchModelProviders(modelId);
+
+            this.plugin.settings.openRouterProviderCache[modelId] = providers;
+            await this.plugin.saveSettings();
+
+            this.display();
+        } catch (error: unknown) {
+            console.log(error);
+            new Notice(
+                `Error loading providers for ${modelId}: ${errorMessage(
+                    error,
+                )}`,
+                0,
+            );
+        }
     }
 
     private renderStatusbarSettings(containerEl: HTMLElement) {
@@ -420,5 +736,38 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                         }),
                 );
         }
+    }
+}
+
+function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
+
+class OpenRouterModelSuggestModal extends FuzzySuggestModal<OpenRouterModelInfo> {
+    private models: OpenRouterModelInfo[];
+    private onChoose: (model: OpenRouterModelInfo) => void;
+
+    constructor(
+        app: App,
+        models: OpenRouterModelInfo[],
+        onChoose: (model: OpenRouterModelInfo) => void,
+    ) {
+        super(app);
+        this.models = models;
+        this.onChoose = onChoose;
+        this.setPlaceholder("Search OpenRouter models…");
+    }
+
+    getItems(): OpenRouterModelInfo[] {
+        return this.models;
+    }
+
+    getItemText(model: OpenRouterModelInfo): string {
+        const kind = model.isStt ? "STT" : "Chat";
+        return `${model.name} (${model.id}) [${kind}]`;
+    }
+
+    onChooseItem(model: OpenRouterModelInfo): void {
+        this.onChoose(model);
     }
 }

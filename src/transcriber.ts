@@ -4,6 +4,29 @@ import { GeminiProvider } from "./providers/geminiProvider";
 import { TranscriptionProvider } from "./providers/transcriptionProvider";
 import { ResponseHandler } from "./responseHandler";
 
+/**
+ * Temporary placeholder until the real OpenRouterProvider is implemented.
+ */
+class OpenRouterProviderPlaceholder implements TranscriptionProvider {
+    readonly displayName = "OpenRouter";
+
+    constructor(private plugin: GeminiTranscriberPlugin) {}
+
+    reloadApiKey() {}
+
+    isConfigured(): boolean {
+        return !!this.plugin.app.secretStorage.getSecret(
+            this.plugin.settings.openRouterApiKeySecretName,
+        );
+    }
+
+    async transcribe(): Promise<string> {
+        throw new Error(
+            "OpenRouter transcription is not implemented yet. Use Gemini for now.",
+        );
+    }
+}
+
 export class Transcriber {
     static validFileFormats = [
         "wav",
@@ -28,6 +51,14 @@ export class Transcriber {
 
     reloadApiKey() {
         this.provider.reloadApiKey();
+    }
+
+    reloadProvider() {
+        this.provider = this.createProvider();
+    }
+
+    getProvider(): TranscriptionProvider {
+        return this.provider;
     }
 
     async transcribe(
@@ -75,6 +106,10 @@ export class Transcriber {
     }
 
     private createProvider(): TranscriptionProvider {
+        if (this.plugin.settings.provider === "openrouter") {
+            return new OpenRouterProviderPlaceholder(this.plugin);
+        }
+
         return new GeminiProvider(this.plugin);
     }
 }
