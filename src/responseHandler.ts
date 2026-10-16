@@ -1,4 +1,3 @@
-import { GenerateContentResponse } from "@google/genai";
 import GeminiTranscriberPlugin from "main";
 import { normalizePath, Notice } from "obsidian";
 
@@ -10,25 +9,25 @@ export class ResponseHandler {
     }
 
     async handleResponse(
-        response: GenerateContentResponse,
+        transcript: string,
         audioFilename: string | undefined,
         toClipboard: boolean,
     ) {
-        if (!response.text) {
+        if (!transcript) {
             return;
         }
 
-        this.plugin.statistics?.addWordsRecieved(response.text);
+        this.plugin.statistics?.addWordsRecieved(transcript);
         await this.plugin.statistics?.save();
 
         if (toClipboard) {
-            this.saveTranscriptInClipboard(response.text);
+            this.saveTranscriptInClipboard(transcript);
             new Notice("Stored transcription in clipboard");
             return;
         }
 
-        this.insertAtCursor(response.text, audioFilename);
-        this.createTranscriptFile(response.text, audioFilename);
+        this.insertAtCursor(transcript, audioFilename);
+        this.createTranscriptFile(transcript, audioFilename);
 
         new Notice("Finished transcription");
     }
