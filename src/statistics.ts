@@ -104,7 +104,7 @@ export class StatisticsModal extends Modal {
         }
         this.statistics = plugin.statistics;
 
-        this.setTitle("Gemini Transcriber Statistics");
+        this.setTitle("Audio Transcriber Statistics");
         this.modalEl.setCssStyles({
             width: "fit-content",
             backgroundColor: "#121212",
