@@ -11,6 +11,7 @@ import {
 import {
     fetchAudioModels,
     fetchModelProviders,
+    fetchTextModels,
     OpenRouterModelCache,
     OpenRouterModelInfo,
 } from "./openRouterApi";
@@ -26,9 +27,16 @@ export interface GeminiTranscriberSettings {
     openRouterApiKeySecretName: string;
     openRouterModel: string;
     openRouterModelIsStt: boolean;
+    openRouterPostProcessingModel: string;
+    openRouterPostProcessingProviders: string[];
+    openRouterPostProcessingReasoningEffort: string;
     openRouterProviders: string[];
     openRouterModelCache: OpenRouterModelCache | undefined;
+    openRouterPostProcessingModelCache: OpenRouterModelCache | undefined;
     openRouterProviderCache: Record<string, string[]>;
+    enablePostProcessing: boolean;
+    geminiPostProcessingModel: string;
+    postProcessingPrompt: string;
     language: string;
     customPrompt: boolean;
     prompt: string;
@@ -54,9 +62,16 @@ export const DEFAULT_SETTINGS: Partial<GeminiTranscriberSettings> = {
     openRouterApiKeySecretName: "",
     openRouterModel: "",
     openRouterModelIsStt: false,
+    openRouterPostProcessingModel: "",
+    openRouterPostProcessingProviders: [],
+    openRouterPostProcessingReasoningEffort: "",
     openRouterProviders: [],
     openRouterModelCache: undefined,
+    openRouterPostProcessingModelCache: undefined,
     openRouterProviderCache: {},
+    enablePostProcessing: false,
+    geminiPostProcessingModel: "gemini-2.0-flash",
+    postProcessingPrompt: "",
     language: "english",
     customPrompt: false,
     prompt: "Transcribe the audio to markdown, removing filler words, be precise and don't interpret anything. Language: ",
@@ -146,9 +161,16 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
             this.renderGeminiSettings(containerEl);
         }
 
+        this.renderPostProcessingSettings(containerEl);
+
+        new Setting(containerEl)
+            .setName("Transcription and output")
+            .setHeading();
+
         new Setting(containerEl)
             .setName(
-                `Language ${this.plugin.settings.customPrompt ? "(disabled)" : ""
+                `Language ${
+                    this.plugin.settings.customPrompt ? "(disabled)" : ""
                 }`,
             )
             .setDesc("Specify the language of the input audio.")
@@ -278,8 +300,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                 new SecretComponent(this.app, el)
                     .setValue(this.plugin.settings.openRouterApiKeySecretName)
                     .onChange(async (value) => {
-                        this.plugin.settings.openRouterApiKeySecretName =
-                            value;
+                        this.plugin.settings.openRouterApiKeySecretName = value;
                         this.plugin.transcriber.reloadApiKey();
                         await this.plugin.saveSettings();
                     }),
@@ -329,22 +350,276 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
         this.renderProviderRanking(containerEl);
     }
 
-    private renderProviderRanking(containerEl: HTMLElement) {
+    private renderPostProcessingSettings(containerEl: HTMLElement) {
+        new Setting(containerEl)
+            .setName("Post-processing")
+            .setHeading()
+            .setDesc(
+                "Optionally run a text model after transcription. The post-processing prompt and transcript are sent to the selected provider.",
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.plugin.settings.enablePostProcessing)
+                    .onChange(async (value) => {
+                        this.plugin.settings.enablePostProcessing = value;
+                        await this.plugin.saveSettings();
+                        this.display();
+                    }),
+            );
+
+        if (!this.plugin.settings.enablePostProcessing) {
+            return;
+        }
+
+        if (this.plugin.settings.provider === "openrouter") {
+            this.renderOpenRouterPostProcessingModel(containerEl);
+        } else {
+            new Setting(containerEl)
+                .setName("Gemini model")
+                .setClass("indent-setting")
+                .setDesc("Model used to post-process the transcript.")
+                .addText((text) =>
+                    text
+                        .setValue(
+                            this.plugin.settings.geminiPostProcessingModel,
+                        )
+                        .setPlaceholder("gemini-2.0-flash")
+                        .onChange(async (value) => {
+                            this.plugin.settings.geminiPostProcessingModel =
+                                value;
+                            await this.plugin.saveSettings();
+                        }),
+                );
+        }
+
+        const promptSetting = new Setting(containerEl)
+            .setName("Post-processing prompt")
+            .setClass("indent-setting")
+            .setDesc(
+                "Instructions for transforming the raw transcript. Use {{transcript}} where the transcript should be inserted.",
+            )
+            .addTextArea((textArea) =>
+                textArea
+                    .setValue(this.plugin.settings.postProcessingPrompt)
+                    .setPlaceholder(
+                        "Summarize this transcript:\n\n{{transcript}}",
+                    )
+                    .onChange(async (value) => {
+                        this.plugin.settings.postProcessingPrompt = value;
+                        await this.plugin.saveSettings();
+                    })
+                    .inputEl.setCssStyles({
+                        width: "-webkit-fill-available",
+                        height: "10em",
+                    }),
+            );
+
+        promptSetting.settingEl.setCssStyles({ alignItems: "initial" });
+        promptSetting.infoEl.setCssStyles({ maxWidth: "30%" });
+
+        if (this.plugin.settings.provider === "openrouter") {
+            const cache =
+                this.plugin.settings.openRouterPostProcessingModelCache;
+            const model = cache?.models.find(
+                (item) =>
+                    item.id ===
+                    this.plugin.settings.openRouterPostProcessingModel,
+            );
+            this.renderProviderRanking(containerEl, true);
+            this.renderPostProcessingReasoning(containerEl, model);
+        }
+    }
+
+    private renderOpenRouterPostProcessingModel(containerEl: HTMLElement) {
+        const cache = this.plugin.settings.openRouterPostProcessingModelCache;
+        const selectedModel =
+            this.plugin.settings.openRouterPostProcessingModel;
+        const info = cache?.models.find((model) => model.id === selectedModel);
+        let desc = selectedModel
+            ? `Selected: ${info?.name ?? selectedModel} (${selectedModel}).`
+            : "No text model selected yet.";
+
+        if (cache) {
+            desc += ` ${cache.models.length} text models cached, last refresh ${new Date(
+                cache.fetchedAt,
+            ).toLocaleString()}.`;
+            if (!cache.includesReasoningMetadata) {
+                desc += " Refresh the model list to check reasoning support.";
+            }
+        }
+
+        const modelSetting = new Setting(containerEl)
+            .setName("OpenRouter model")
+            .setClass("indent-setting")
+            .setDesc(
+                `${desc} Only text-capable models are listed; STT models are excluded.`,
+            )
+            .addButton((button) =>
+                button
+                    .setButtonText("Select model")
+                    .setCta()
+                    .onClick(() => {
+                        void this.openPostProcessingModelModal();
+                    }),
+            )
+            .addButton((button) =>
+                button.setButtonText("Refresh model list").onClick(async () => {
+                    await this.refreshPostProcessingModelCache();
+                    this.display();
+                }),
+            );
+
+        modelSetting.descEl.createEl("br");
+        modelSetting.descEl.createEl("a", {
+            href: "https://openrouter.ai/models",
+            text: "Browse models on openrouter.ai",
+        });
+
+    }
+
+    private renderPostProcessingReasoning(
+        containerEl: HTMLElement,
+        model: OpenRouterModelInfo | undefined,
+    ) {
+        const efforts = model?.reasoningEfforts;
+        if (!efforts || efforts.length < 2) {
+            return;
+        }
+
+        const currentEffort =
+            this.plugin.settings.openRouterPostProcessingReasoningEffort;
+        const selectedEffort = efforts.includes(currentEffort)
+            ? currentEffort
+            : model.defaultReasoningEffort &&
+                efforts.includes(model.defaultReasoningEffort)
+              ? model.defaultReasoningEffort
+              : "";
+
+        new Setting(containerEl)
+            .setName("Reasoning strength")
+            .setClass("indent-setting")
+            .setDesc("Choose a supported reasoning effort for this model.")
+            .addDropdown((dropdown) => {
+                dropdown
+                    .addOption("", "Use model default")
+                    .setValue(selectedEffort);
+
+                for (const effort of efforts) {
+                    dropdown.addOption(
+                        effort,
+                        effort.charAt(0).toUpperCase() + effort.slice(1),
+                    );
+                }
+
+                dropdown.onChange(async (value) => {
+                    this.plugin.settings.openRouterPostProcessingReasoningEffort =
+                        value;
+                    await this.plugin.saveSettings();
+                });
+            });
+    }
+
+    private async openPostProcessingModelModal() {
+        if (
+            !this.plugin.settings.openRouterPostProcessingModelCache
+                ?.includesReasoningMetadata
+        ) {
+            await this.refreshPostProcessingModelCache();
+        }
+
+        const models =
+            this.plugin.settings.openRouterPostProcessingModelCache?.models ??
+            [];
+
+        if (models.length === 0) {
+            new Notice(
+                "No OpenRouter text models available. Check your internet connection and refresh the model list.",
+                0,
+            );
+            return;
+        }
+
+        new OpenRouterModelSuggestModal(this.app, models, async (model) => {
+            this.plugin.settings.openRouterPostProcessingModel = model.id;
+            this.plugin.settings.openRouterPostProcessingProviders = [];
+            this.plugin.settings.openRouterPostProcessingReasoningEffort =
+                model.reasoningEfforts?.length === 1
+                    ? model.reasoningEfforts[0]
+                    : model.reasoningEfforts?.includes(
+                            model.defaultReasoningEffort ?? "",
+                        )
+                      ? (model.defaultReasoningEffort ?? "")
+                      : "";
+            await this.plugin.saveSettings();
+            void this.loadProviderOptions(model.id, true);
+            this.display();
+        }).open();
+    }
+
+    private async refreshPostProcessingModelCache() {
+        try {
+            const models = await fetchTextModels();
+
+            this.plugin.settings.openRouterPostProcessingModelCache = {
+                fetchedAt: Date.now(),
+                models,
+                includesReasoningMetadata: true,
+            };
+
+            const selectedModel = models.find(
+                (model) =>
+                    model.id ===
+                    this.plugin.settings.openRouterPostProcessingModel,
+            );
+            const currentEffort =
+                this.plugin.settings.openRouterPostProcessingReasoningEffort;
+            if (selectedModel?.reasoningEfforts?.length === 1) {
+                this.plugin.settings.openRouterPostProcessingReasoningEffort =
+                    selectedModel.reasoningEfforts[0];
+            } else if (
+                currentEffort &&
+                !selectedModel?.reasoningEfforts?.includes(currentEffort)
+            ) {
+                this.plugin.settings.openRouterPostProcessingReasoningEffort =
+                    "";
+            }
+            await this.plugin.saveSettings();
+
+            new Notice(`Loaded ${models.length} OpenRouter text models.`);
+        } catch (error: unknown) {
+            console.log(error);
+            new Notice(
+                `Error loading OpenRouter text models: ${errorMessage(error)}`,
+                0,
+            );
+        }
+    }
+
+    private renderProviderRanking(
+        containerEl: HTMLElement,
+        postProcessing = false,
+    ) {
         const rankingSetting = new Setting(containerEl)
-            .setName("Provider ranking")
+            .setName(
+                postProcessing
+                    ? "Post-processing provider ranking"
+                    : "Provider ranking",
+            )
             .setHeading()
             .setDesc(
                 "Optional: choose which providers should serve the model and in which order (sent as provider.order). With an empty selection OpenRouter uses its default routing.",
             );
 
-        if (this.isSttSelected()) {
+        if (!postProcessing && this.isSttSelected()) {
             rankingSetting.setDesc(
                 "Provider ranking is not supported for STT models: the /audio/transcriptions endpoint does not accept provider.order, so OpenRouter routes automatically.",
             );
             return;
         }
 
-        const selectedModel = this.plugin.settings.openRouterModel;
+        const selectedModel = postProcessing
+            ? this.plugin.settings.openRouterPostProcessingModel
+            : this.plugin.settings.openRouterModel;
         if (!selectedModel) {
             rankingSetting.setDesc(
                 "Select a model first to configure the provider ranking.",
@@ -352,7 +627,9 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
             return;
         }
 
-        const providers = this.plugin.settings.openRouterProviders;
+        const providers = postProcessing
+            ? this.plugin.settings.openRouterPostProcessingProviders
+            : this.plugin.settings.openRouterProviders;
 
         providers.forEach((provider, index) => {
             new Setting(containerEl)
@@ -364,7 +641,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                         .setTooltip("Move up")
                         .setDisabled(index === 0)
                         .onClick(() => {
-                            this.moveProvider(index, index - 1);
+                            this.moveProvider(index, index - 1, postProcessing);
                         }),
                 )
                 .addButton((button) =>
@@ -373,13 +650,15 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                         .setTooltip("Move down")
                         .setDisabled(index === providers.length - 1)
                         .onClick(() => {
-                            this.moveProvider(index, index + 1);
+                            this.moveProvider(index, index + 1, postProcessing);
                         }),
                 )
                 .addButton((button) =>
                     button.setButtonText("Remove").onClick(async () => {
-                        this.plugin.settings.openRouterProviders =
-                            providers.filter((p) => p !== provider);
+                        this.setProviderRanking(
+                            providers.filter((p) => p !== provider),
+                            postProcessing,
+                        );
                         await this.plugin.saveSettings();
                         this.display();
                     }),
@@ -406,11 +685,12 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                     "The list of providers serving this model is not loaded yet.",
                 )
                 .addButton((button) =>
-                    button
-                        .setButtonText("Load providers")
-                        .onClick(() => {
-                            void this.loadProviderOptions(selectedModel);
-                        }),
+                    button.setButtonText("Load providers").onClick(() => {
+                        void this.loadProviderOptions(
+                            selectedModel,
+                            postProcessing,
+                        );
+                    }),
                 );
             return;
         }
@@ -432,24 +712,35 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
                     if (!value) {
                         return;
                     }
-                    this.plugin.settings.openRouterProviders = [
-                        ...this.plugin.settings.openRouterProviders,
-                        value,
-                    ];
+                    this.setProviderRanking(
+                        [...providers, value],
+                        postProcessing,
+                    );
                     await this.plugin.saveSettings();
                     this.display();
                 });
             });
     }
 
-    private moveProvider(from: number, to: number) {
-        const providers = [...this.plugin.settings.openRouterProviders];
+    private moveProvider(from: number, to: number, postProcessing = false) {
+        const currentProviders = postProcessing
+            ? this.plugin.settings.openRouterPostProcessingProviders
+            : this.plugin.settings.openRouterProviders;
+        const providers = [...currentProviders];
         const moved = providers[from];
         providers[from] = providers[to];
         providers[to] = moved;
 
-        this.plugin.settings.openRouterProviders = providers;
+        this.setProviderRanking(providers, postProcessing);
         void this.plugin.saveSettings().then(() => this.display());
+    }
+
+    private setProviderRanking(providers: string[], postProcessing: boolean) {
+        if (postProcessing) {
+            this.plugin.settings.openRouterPostProcessingProviders = providers;
+        } else {
+            this.plugin.settings.openRouterProviders = providers;
+        }
     }
 
     private async openModelModal() {
@@ -457,8 +748,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
             await this.refreshModelCache();
         }
 
-        const models =
-            this.plugin.settings.openRouterModelCache?.models ?? [];
+        const models = this.plugin.settings.openRouterModelCache?.models ?? [];
 
         if (models.length === 0) {
             new Notice(
@@ -500,7 +790,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
         }
     }
 
-    private async loadProviderOptions(modelId: string) {
+    private async loadProviderOptions(modelId: string, postProcessing = false) {
         try {
             const providers = await fetchModelProviders(modelId);
 

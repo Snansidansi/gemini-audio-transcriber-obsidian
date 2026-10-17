@@ -6,11 +6,14 @@ export interface OpenRouterModelInfo {
     id: string;
     name: string;
     isStt: boolean;
+    reasoningEfforts?: string[];
+    defaultReasoningEffort?: string;
 }
 
 export interface OpenRouterModelCache {
     fetchedAt: number;
     models: OpenRouterModelInfo[];
+    includesReasoningMetadata?: boolean;
 }
 
 interface RawModel {
@@ -19,6 +22,11 @@ interface RawModel {
     architecture?: {
         input_modalities?: string[];
         output_modalities?: string[];
+    };
+    reasoning?: {
+        supported_efforts?: string[] | null;
+        default_effort?: string;
+        mandatory?: boolean;
     };
 }
 
@@ -71,6 +79,51 @@ export async function fetchAudioModels(): Promise<OpenRouterModelInfo[]> {
     return Array.from(models.values()).sort((a, b) =>
         a.id.localeCompare(b.id),
     );
+}
+
+/**
+ * Fetches OpenRouter models that accept and return text, excluding STT models.
+ */
+export async function fetchTextModels(): Promise<OpenRouterModelInfo[]> {
+    const rawModels = await fetchModels("output_modalities=text&limit=1000");
+
+    return rawModels
+        .filter(
+            (raw) =>
+                !isSttModel(raw) &&
+                (raw.architecture?.input_modalities ?? []).includes("text") &&
+                (raw.architecture?.output_modalities ?? []).includes("text"),
+        )
+        .map((raw) => {
+            const reasoning = raw.reasoning;
+            const supportedEfforts = reasoning?.supported_efforts;
+            let reasoningEfforts: string[] | undefined;
+
+            if (Array.isArray(supportedEfforts)) {
+                reasoningEfforts = reasoning?.mandatory
+                    ? supportedEfforts.filter((effort) => effort !== "none")
+                    : supportedEfforts;
+            } else if (supportedEfforts === null) {
+                reasoningEfforts = [
+                    "max",
+                    "xhigh",
+                    "high",
+                    "medium",
+                    "low",
+                    "minimal",
+                    ...(reasoning?.mandatory ? [] : ["none"]),
+                ];
+            }
+
+            return {
+                id: raw.id,
+                name: raw.name,
+                isStt: false,
+                reasoningEfforts,
+                defaultReasoningEffort: reasoning?.default_effort,
+            };
+        })
+        .sort((a, b) => a.id.localeCompare(b.id));
 }
 
 /**
