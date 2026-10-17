@@ -1,5 +1,5 @@
 {
-    "id": "gemini-audio-transcriber",
+    "id": "audio-transcriber",
     "name": "Audio Transcriber",
     "version": "1.2.0",
     "minAppVersion": "0.15.0",
