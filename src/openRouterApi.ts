@@ -8,6 +8,7 @@ export interface OpenRouterModelInfo {
     isStt: boolean;
     reasoningEfforts?: string[];
     defaultReasoningEffort?: string;
+    hasReasoningMetadata?: boolean;
 }
 
 export interface OpenRouterModelCache {
@@ -44,6 +45,41 @@ function isSttModel(raw: RawModel): boolean {
     );
 }
 
+function reasoningInfo(raw: RawModel): Pick<
+    OpenRouterModelInfo,
+    "reasoningEfforts" | "defaultReasoningEffort" | "hasReasoningMetadata"
+> {
+    const reasoning = raw.reasoning;
+    if (!reasoning) {
+        return {};
+    }
+
+    const supportedEfforts = reasoning.supported_efforts;
+    let reasoningEfforts: string[] | undefined;
+
+    if (Array.isArray(supportedEfforts)) {
+        reasoningEfforts = reasoning.mandatory
+            ? supportedEfforts.filter((effort) => effort !== "none")
+            : supportedEfforts;
+    } else if (supportedEfforts === null) {
+        reasoningEfforts = [
+            "max",
+            "xhigh",
+            "high",
+            "medium",
+            "low",
+            "minimal",
+            ...(reasoning.mandatory ? [] : ["none"]),
+        ];
+    }
+
+    return {
+        reasoningEfforts,
+        defaultReasoningEffort: reasoning.default_effort,
+        hasReasoningMetadata: true,
+    };
+}
+
 async function fetchModels(query: string): Promise<RawModel[]> {
     const response = await requestUrl({
         url: `${OPENROUTER_API_BASE}/models?${query}`,
@@ -69,7 +105,12 @@ export async function fetchAudioModels(): Promise<OpenRouterModelInfo[]> {
         if (isSttModel(raw)) {
             continue;
         }
-        models.set(raw.id, { id: raw.id, name: raw.name, isStt: false });
+        models.set(raw.id, {
+            id: raw.id,
+            name: raw.name,
+            isStt: false,
+            ...reasoningInfo(raw),
+        });
     }
 
     for (const raw of sttRaw) {
@@ -94,35 +135,12 @@ export async function fetchTextModels(): Promise<OpenRouterModelInfo[]> {
                 (raw.architecture?.input_modalities ?? []).includes("text") &&
                 (raw.architecture?.output_modalities ?? []).includes("text"),
         )
-        .map((raw) => {
-            const reasoning = raw.reasoning;
-            const supportedEfforts = reasoning?.supported_efforts;
-            let reasoningEfforts: string[] | undefined;
-
-            if (Array.isArray(supportedEfforts)) {
-                reasoningEfforts = reasoning?.mandatory
-                    ? supportedEfforts.filter((effort) => effort !== "none")
-                    : supportedEfforts;
-            } else if (supportedEfforts === null) {
-                reasoningEfforts = [
-                    "max",
-                    "xhigh",
-                    "high",
-                    "medium",
-                    "low",
-                    "minimal",
-                    ...(reasoning?.mandatory ? [] : ["none"]),
-                ];
-            }
-
-            return {
-                id: raw.id,
-                name: raw.name,
-                isStt: false,
-                reasoningEfforts,
-                defaultReasoningEffort: reasoning?.default_effort,
-            };
-        })
+        .map((raw) => ({
+            id: raw.id,
+            name: raw.name,
+            isStt: false,
+            ...reasoningInfo(raw),
+        }))
         .sort((a, b) => a.id.localeCompare(b.id));
 }
 
