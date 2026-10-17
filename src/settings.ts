@@ -119,6 +119,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
 
     display(): void {
         const { containerEl } = this;
+        const scrollTop = containerEl.scrollTop;
 
         containerEl.empty();
 
@@ -231,6 +232,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
         }
 
         this.renderSaveAudioSettings(containerEl);
+        containerEl.scrollTop = scrollTop;
     }
 
     private renderGeminiSettings(containerEl: HTMLElement) {
