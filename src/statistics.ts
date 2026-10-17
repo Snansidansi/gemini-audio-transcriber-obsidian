@@ -11,6 +11,7 @@ export class Statistics {
         filesTranscribed: 0,
         secondsTranscribed: 0,
         wordsRecived: 0,
+        postProcessingWords: 0,
     };
 
     constructor(plugin: GeminiTranscriberPlugin) {
@@ -32,6 +33,11 @@ export class Statistics {
 
     addWordsRecieved(response: string) {
         this.statsData.wordsRecived += response.split(" ").length;
+    }
+
+    addPostProcessingWords(response: string) {
+        const wordCount = response.trim().match(/\S+/g)?.length ?? 0;
+        this.statsData.postProcessingWords += wordCount;
     }
 
     async addAudioFileDuration(audioBlob: Blob) {
@@ -74,6 +80,7 @@ export class Statistics {
         this.statsData.filesTranscribed = 0;
         this.statsData.secondsTranscribed = 0;
         this.statsData.wordsRecived = 0;
+        this.statsData.postProcessingWords = 0;
         await this.save();
     }
 
@@ -88,7 +95,14 @@ export class Statistics {
         const jsonData = await this.plugin.app.vault.adapter.read(
             this.filepath,
         );
-        this.statsData = JSON.parse(jsonData);
+        const savedData = JSON.parse(jsonData) as Partial<
+            typeof this.statsData
+        >;
+        this.statsData = {
+            ...this.statsData,
+            ...savedData,
+            postProcessingWords: savedData.postProcessingWords ?? 0,
+        };
     }
 }
 
@@ -199,6 +213,11 @@ export class StatisticsModal extends Modal {
             lettersIcon,
             statsData.wordsRecived,
             "Total words transcribed",
+        );
+        createCard(
+            lettersIcon,
+            statsData.postProcessingWords,
+            "Post-processing output words",
         );
 
         // Footer with reset button

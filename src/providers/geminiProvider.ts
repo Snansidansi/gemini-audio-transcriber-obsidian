@@ -6,7 +6,10 @@ import {
 } from "@google/genai";
 import GeminiTranscriberPlugin from "main";
 import { Notice } from "obsidian";
-import { TranscriptionProvider } from "./transcriptionProvider";
+import {
+    createPostProcessingPrompt,
+    TranscriptionProvider,
+} from "./transcriptionProvider";
 
 export class GeminiProvider implements TranscriptionProvider {
     readonly displayName = "Gemini";
@@ -53,6 +56,28 @@ export class GeminiProvider implements TranscriptionProvider {
                 }
             }
         }
+    }
+
+    async postProcess(transcript: string): Promise<string> {
+        const model = this.plugin.settings.geminiPostProcessingModel.trim();
+        if (!model) {
+            throw new Error("No Gemini post-processing model selected.");
+        }
+
+        const prompt = createPostProcessingPrompt(
+            this.plugin.settings.postProcessingPrompt,
+            transcript,
+        );
+        const response = await this.ai!.models.generateContent({
+            model,
+            contents: createUserContent([prompt]),
+        });
+        const output = response.text ?? "";
+        if (!output.trim()) {
+            throw new Error("The post-processing model returned no text.");
+        }
+
+        return output;
     }
 
     private async getResponse(uploadedFile: File) {

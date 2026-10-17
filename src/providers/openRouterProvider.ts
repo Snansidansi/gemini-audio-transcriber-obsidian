@@ -1,7 +1,10 @@
 import GeminiTranscriberPlugin from "main";
 import { requestUrl, RequestUrlResponse } from "obsidian";
 import { OPENROUTER_API_BASE } from "../openRouterApi";
-import { TranscriptionProvider } from "./transcriptionProvider";
+import {
+    createPostProcessingPrompt,
+    TranscriptionProvider,
+} from "./transcriptionProvider";
 
 const WAV_SAMPLE_RATE = 16000;
 
@@ -253,6 +256,46 @@ export class OpenRouterProvider implements TranscriptionProvider {
         }
 
         return await this.transcribeWithChatModel(blob);
+    }
+
+    async postProcess(transcript: string): Promise<string> {
+        const model = this.plugin.settings.openRouterPostProcessingModel.trim();
+        if (!model) {
+            throw new Error("No OpenRouter post-processing model selected.");
+        }
+
+        const prompt = createPostProcessingPrompt(
+            this.plugin.settings.postProcessingPrompt,
+            transcript,
+        );
+        const request: Record<string, unknown> = {
+            model,
+            messages: [{ role: "user", content: prompt }],
+        };
+
+        if (this.plugin.settings.openRouterPostProcessingProviders.length > 0) {
+            request.provider = {
+                order: this.plugin.settings.openRouterPostProcessingProviders,
+            };
+        }
+
+        const reasoningEffort =
+            this.plugin.settings.openRouterPostProcessingReasoningEffort;
+        if (reasoningEffort) {
+            request.reasoning = { effort: reasoningEffort };
+        }
+
+        const response = await this.postJson(
+            `${OPENROUTER_API_BASE}/chat/completions`,
+            request,
+        );
+        const data = response.json as ChatCompletionResponse;
+        const output = data.choices?.[0]?.message?.content ?? "";
+        if (!output.trim()) {
+            throw new Error("The post-processing model returned no text.");
+        }
+
+        return output;
     }
 
     /**

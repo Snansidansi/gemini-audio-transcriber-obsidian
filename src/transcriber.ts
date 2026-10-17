@@ -56,10 +56,30 @@ export class Transcriber {
 
         try {
             const transcript = await this.provider.transcribe(blob);
+            let finalTranscript = transcript;
+            let statisticsTranscript = transcript;
+
+            if (this.plugin.settings.enablePostProcessing && transcript.trim()) {
+                try {
+                    finalTranscript = await this.provider.postProcess(transcript);
+                    statisticsTranscript = finalTranscript;
+                    this.plugin.statistics?.addPostProcessingWords(
+                        finalTranscript,
+                    );
+                } catch (error: unknown) {
+                    console.log(error);
+                    finalTranscript = this.appendPostProcessingFailure(
+                        transcript,
+                        error,
+                    );
+                }
+            }
+
             await this.responseHandler.handleResponse(
-                transcript,
+                finalTranscript,
                 filename,
                 toClipboard,
+                statisticsTranscript,
             );
 
             await this.plugin.statistics?.addTranscribedDuration(blob);
@@ -89,5 +109,21 @@ export class Transcriber {
         }
 
         return new GeminiProvider(this.plugin);
+    }
+
+    private appendPostProcessingFailure(
+        transcript: string,
+        error: unknown,
+    ): string {
+        const message =
+            (error instanceof Error ? error.message : String(error)) ||
+            "Unknown post-processing error.";
+        const quotedError = message
+            .replace(/\r\n?/g, "\n")
+            .split("\n")
+            .map((line) => `> ${line}`)
+            .join("\n");
+
+        return `${transcript}\n\n> [!failure] Failure\n${quotedError}`;
     }
 }

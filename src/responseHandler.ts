@@ -12,12 +12,13 @@ export class ResponseHandler {
         transcript: string,
         audioFilename: string | undefined,
         toClipboard: boolean,
+        statisticsTranscript = transcript,
     ) {
         if (!transcript) {
             return;
         }
 
-        this.plugin.statistics?.addWordsRecieved(transcript);
+        this.plugin.statistics?.addWordsRecieved(statisticsTranscript);
         await this.plugin.statistics?.save();
 
         if (toClipboard) {
