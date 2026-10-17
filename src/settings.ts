@@ -394,6 +394,27 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
 
         if (this.plugin.settings.provider === "openrouter") {
             this.renderOpenRouterPostProcessingModel(containerEl);
+            const cache =
+                this.plugin.settings.openRouterPostProcessingModelCache;
+            if (this.plugin.settings.openRouterPostProcessingModel) {
+                const model = cache?.models.find(
+                    (item) =>
+                        item.id ===
+                        this.plugin.settings.openRouterPostProcessingModel,
+                );
+                this.renderReasoningSetting(
+                    containerEl,
+                    model,
+                    cache?.includesReasoningMetadata === true,
+                    this.plugin.settings
+                        .openRouterPostProcessingReasoningEffort,
+                    async (value) => {
+                        this.plugin.settings.openRouterPostProcessingReasoningEffort =
+                            value;
+                        await this.plugin.saveSettings();
+                    },
+                );
+            }
         } else {
             new Setting(containerEl)
                 .setName("Gemini model")
@@ -439,28 +460,7 @@ export class GeminiTranscriberSettingsTab extends PluginSettingTab {
         promptSetting.infoEl.setCssStyles({ maxWidth: "30%" });
 
         if (this.plugin.settings.provider === "openrouter") {
-            const cache =
-                this.plugin.settings.openRouterPostProcessingModelCache;
             this.renderProviderRanking(containerEl, true);
-            if (this.plugin.settings.openRouterPostProcessingModel) {
-                const model = cache?.models.find(
-                    (item) =>
-                        item.id ===
-                        this.plugin.settings.openRouterPostProcessingModel,
-                );
-                this.renderReasoningSetting(
-                    containerEl,
-                    model,
-                    cache?.includesReasoningMetadata === true,
-                    this.plugin.settings
-                        .openRouterPostProcessingReasoningEffort,
-                    async (value) => {
-                        this.plugin.settings.openRouterPostProcessingReasoningEffort =
-                            value;
-                        await this.plugin.saveSettings();
-                    },
-                );
-            }
         }
     }
 
