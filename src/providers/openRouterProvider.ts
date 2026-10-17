@@ -285,6 +285,12 @@ export class OpenRouterProvider implements TranscriptionProvider {
             ],
         };
 
+        const reasoningEffort =
+            this.plugin.settings.openRouterReasoningEffort;
+        if (reasoningEffort) {
+            request.reasoning = { effort: reasoningEffort };
+        }
+
         if (this.plugin.settings.openRouterProviders.length > 0) {
             request.provider = {
                 order: this.plugin.settings.openRouterProviders,
